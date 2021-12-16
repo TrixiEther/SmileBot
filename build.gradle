@@ -1,0 +1,42 @@
+plugins {
+    id 'org.springframework.boot' version '2.4.5'
+    id 'java'
+}
+
+version = '1.0.0'
+group = 'org.smilebot'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        name 'm2-dv8tion'
+        url 'https://m2.dv8tion.net/releases'
+    }
+}
+
+dependencies {
+    implementation platform('org.springframework.boot:spring-boot-dependencies:2.4.5')
+
+    implementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+
+    implementation("org.postgresql:postgresql:42.1.4")
+    implementation("org.hibernate:hibernate-core:5.6.2.Final")
+
+    implementation("net.dv8tion:JDA:4.4.0_350")
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+}
+
+
+
+
+
