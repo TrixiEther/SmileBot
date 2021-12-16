@@ -8,8 +8,6 @@ import smilebot.model.Channel;
 import smilebot.model.Emoji;
 import smilebot.model.Server;
 
-import java.util.ArrayList;
-
 public class DiscordService {
 
     private static final ServerDAOImpl serverDAO = new ServerDAOImpl();
