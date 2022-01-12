@@ -7,16 +7,13 @@ import javax.persistence.*;
 public class Channel extends DiscordEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
-
     @Column(name = "c_snowflake")
     private long snowflake;
 
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "server_id")
+    @JoinColumn(name = "server_sn")
     private Server server;
 
     public Channel() {}
@@ -24,10 +21,6 @@ public class Channel extends DiscordEntity {
     public Channel(long snowflake, String name) {
         this.snowflake = snowflake;
         this.name = name;
-    }
-
-    public int getId() {
-        return this.id;
     }
 
     public String getName() {
@@ -49,8 +42,7 @@ public class Channel extends DiscordEntity {
     @Override
     public String toString() {
         return "model.Channel{" +
-                "id = " + id +
-                ", snowflake = " + snowflake +
+                "snowflake = " + snowflake +
                 ", name = " + name + "}";
     }
 }

@@ -13,8 +13,8 @@ public class MessageListener extends ListenerAdapter {
             "Received: User=" + e.getAuthor().getName() +
             " Message=" + e.getMessage().getContentDisplay()
         );
-        if (!e.getAuthor().isBot())
-            e.getChannel().sendMessage("OK!").queue();
+        /*if (!e.getAuthor().isBot())
+            e.getChannel().sendMessage("OK!").queue();*/
 
         if (e.getMessage().getContentDisplay().equals("!init")) {
 

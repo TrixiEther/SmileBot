@@ -7,17 +7,14 @@ import javax.persistence.*;
 public class Emoji extends DiscordEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    @Column(name = "e_snowflake")
+    private long snowflake;
 
     @Column(name = "content")
     private String emoji;
 
-    @Column(name = "e_snowflake")
-    private long snowflake;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "server_id")
+    @JoinColumn(name = "server_sn")
     private Server server;
 
     public Emoji() {};
@@ -25,10 +22,6 @@ public class Emoji extends DiscordEntity {
     public Emoji(long snowflake, String emoji) {
         this.emoji = emoji;
         this.snowflake = snowflake;
-    }
-
-    public int getId() {
-        return this.id;
     }
 
     public String getEmoji() {
@@ -50,8 +43,7 @@ public class Emoji extends DiscordEntity {
     @Override
     public String toString() {
         return "model.Emoji{" +
-                "id = " + id +
-                ", snowflake = " + snowflake +
+                "snowflake = " + snowflake +
                 ", emoji = " + emoji + "}";
     }
 

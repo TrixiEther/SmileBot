@@ -1,17 +1,17 @@
 package smilebot.model;
 
+import org.hibernate.annotations.Cascade;
 import javax.persistence.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "servers")
 public class Server extends DiscordEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
-
     @Column(name = "s_snowflake", unique = true)
     private long snowflake;
 
@@ -22,6 +22,19 @@ public class Server extends DiscordEntity {
 
     @OneToMany(mappedBy = "server", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Emoji> emojis;
+
+    @Cascade({
+            org.hibernate.annotations.CascadeType.SAVE_UPDATE,
+            org.hibernate.annotations.CascadeType.MERGE,
+            org.hibernate.annotations.CascadeType.PERSIST
+    })
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "server_users",
+            joinColumns = @JoinColumn(name = "server_sn"),
+            inverseJoinColumns = @JoinColumn(name = "user_sn")
+    )
+    private Set<User> users = new HashSet<>();
 
     public Server() {}
 
@@ -40,6 +53,10 @@ public class Server extends DiscordEntity {
         emojis.add(emoji);
     }
 
+    public void addUser(User user) {
+        users.add(user);
+    }
+
     public void removeChannel(Channel channel) {
         channels.remove(channel);
     }
@@ -48,8 +65,8 @@ public class Server extends DiscordEntity {
         emojis.remove(emoji);
     }
 
-    public int getId() {
-        return this.id;
+    public void removeUser(User user) {
+        users.remove(user);
     }
 
     public String getName() {
@@ -76,10 +93,17 @@ public class Server extends DiscordEntity {
         this.emojis = emojis;
     }
 
+    public Set<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(Set<User> users) {
+        this.users = users;
+    }
+
     @Override
     public String toString() {
         return "model.Server{" +
-                "id = " + id +
                 "snowflake = " + snowflake +
                 "name = " + name + "}";
     }

@@ -3,10 +3,13 @@ package smilebot.service;
 import net.dv8tion.jda.api.entities.Emote;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.GuildChannel;
+import net.dv8tion.jda.api.entities.Member;
 import smilebot.dao.ServerDAOImpl;
+import smilebot.dao.UserDAOImpl;
 import smilebot.model.Channel;
 import smilebot.model.Emoji;
 import smilebot.model.Server;
+import smilebot.model.User;
 
 public class DiscordService {
 
@@ -21,7 +24,6 @@ public class DiscordService {
     public static void addServer(Guild guild) {
 
         Server server = new Server(Long.parseLong(guild.getId()), guild.getName());
-        serverDAO.save(server);
 
         for (GuildChannel gc : guild.getChannels()) {
             Channel channel = new Channel(Long.parseLong(gc.getId()), gc.getName());
@@ -35,9 +37,20 @@ public class DiscordService {
             server.addEmoji(emoji);
             System.out.println("e.snowflake=" + Long.parseLong(e.getId()) + "e.name=" + e.getName());
         }
+        for (Member m : guild.getMembers()) {
+            User user = new User(Long.parseLong(m.getId()), m.getUser().getName());
+            user.addServer(server);
+            server.addUser(user);
+        }
 
-        serverDAO.update(server);
+        serverDAO.save(server);
 
+    }
+
+    public static boolean initServer(Guild guild) {
+
+
+        return true;
     }
 
 }
