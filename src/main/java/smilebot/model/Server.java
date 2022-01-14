@@ -65,6 +65,14 @@ public class Server implements ISnowflake {
         emojis.remove(emoji);
     }
 
+    public Emoji findEmojiBySnowflake(long snowflake) {
+        for (Emoji e : emojis) {
+            if (e.getSnowflake() == snowflake)
+                return e;
+        }
+        return null;
+    }
+
     public void removeUser(User user) {
         users.remove(user);
     }
@@ -85,6 +93,14 @@ public class Server implements ISnowflake {
         this.channels = channels;
     }
 
+    public Channel findChannelBySnowflake(long snowflake) {
+        for (Channel c : channels) {
+            if (c.getSnowflake() == snowflake)
+                return c;
+        }
+        return null;
+    }
+
     public List<Emoji> getEmojis() {
         return emojis;
     }
@@ -99,6 +115,14 @@ public class Server implements ISnowflake {
 
     public void setUsers(Set<User> users) {
         this.users = users;
+    }
+
+    public User findUserBySnowflake(long snowflake) {
+        for (User u : users) {
+            if (u.getSnowflake() == snowflake)
+                return u;
+        }
+        return null;
     }
 
     @Override

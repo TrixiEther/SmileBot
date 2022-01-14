@@ -1,7 +1,5 @@
 package smilebot.dao;
 
-import smilebot.model.DiscordEntity;
-
 public interface AbstractDAO<T> {
 
     T findById(int id);

@@ -1,6 +1,8 @@
 package smilebot.model;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "emoji")
@@ -17,11 +19,15 @@ public class Emoji implements ISnowflake {
     @JoinColumn(name = "server_sn")
     private Server server;
 
+    @OneToMany(mappedBy = "emoji", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<EmojiInMessageResult> emojiInMessageResults;
+
     public Emoji() {};
 
     public Emoji(long snowflake, String emoji) {
         this.emoji = emoji;
         this.snowflake = snowflake;
+        emojiInMessageResults = new ArrayList<>();
     }
 
     public String getEmoji() {
@@ -42,6 +48,18 @@ public class Emoji implements ISnowflake {
 
     public void setServer(Server server) {
         this.server = server;
+    }
+
+    public void setEmojiInMessageResults(List<EmojiInMessageResult> emojiInMessageResults) {
+        this.emojiInMessageResults = emojiInMessageResults;
+    }
+
+    public List<EmojiInMessageResult> getEmojiInMessageResults() {
+        return emojiInMessageResults;
+    }
+
+    public void addEmojiInMessageResult(EmojiInMessageResult emojiInMessageResult) {
+        this.emojiInMessageResults.add(emojiInMessageResult);
     }
 
     @Override

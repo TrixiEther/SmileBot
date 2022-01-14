@@ -1,15 +1,15 @@
 package smilebot.service;
 
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.requests.RestAction;
 import smilebot.dao.ServerDAOImpl;
 import smilebot.dao.UserDAOImpl;
 import smilebot.helpers.EmojiCount;
 import smilebot.helpers.MessageAnalysisHelper;
 import smilebot.helpers.MessageAnalysisResult;
-import smilebot.model.Channel;
+import smilebot.model.*;
 import smilebot.model.Emoji;
-import smilebot.model.Server;
 import smilebot.model.User;
 
 import java.util.ArrayList;
@@ -56,6 +56,8 @@ public class DiscordService {
             analysisChannelMessages(tc, server);
         }
 
+        serverDAO.update(server);
+
     }
 
     private static void analysisChannelMessages(TextChannel tc, Server server) {
@@ -88,14 +90,50 @@ public class DiscordService {
 
                 if (tempMessages.size() > 0) {
                     for (Message m : tempMessages) {
-                        //System.out.println(m.getContentDisplay());
                         MessageAnalysisResult mar = mah.analysisMessageContent(m.getContentDisplay());
 
                         if (mar.getResults().size() != 0) {
-                            System.out.println("Message contain emojis:");
-                            for (EmojiCount e : mar.getResults()) {
-                                System.out.println("snowflake = " + e.getSnowflake() + ", count = " + e.getCount());
+
+                            //
+                            // If the user and channel is in the server list,
+                            // then we will process the message and add it to the statistics
+                            // If not, then (for now) ignore
+                            //
+
+                            User entityUser = server.findUserBySnowflake(m.getAuthor().getIdLong());
+                            Channel entityChannel = server.findChannelBySnowflake(m.getChannel().getIdLong());
+                            if (entityUser != null && entityChannel != null) {
+
+                                smilebot.model.Message message = new smilebot.model.Message(
+                                        m.getIdLong(),
+                                        entityUser,
+                                        entityChannel
+                                );
+
+                                for (EmojiCount ec : mar.getResults()) {
+
+                                    Emoji entityEmoji = server.findEmojiBySnowflake(ec.getSnowflake());
+
+                                    if (entityEmoji != null) {
+
+                                        EmojiInMessageResult eimr = new EmojiInMessageResult(message, entityEmoji, ec.getCount());
+
+                                        eimr.setMessage(message);
+                                        eimr.setEmoji(entityEmoji);
+                                        entityEmoji.addEmojiInMessageResult(eimr);
+                                        message.addEmojiInMessageResult(eimr);
+
+                                        message.setChannel(entityChannel);
+                                        entityChannel.addMessage(message);
+
+                                        message.setUser(entityUser);
+                                        entityUser.addMessage(message);
+
+                                    }
+                                }
+
                             }
+
                         }
 
                         count++;

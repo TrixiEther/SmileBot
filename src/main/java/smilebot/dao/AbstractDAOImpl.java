@@ -1,6 +1,5 @@
 package smilebot.dao;
 
-import smilebot.model.DiscordEntity;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.springframework.core.GenericTypeResolver;

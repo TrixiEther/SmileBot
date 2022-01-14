@@ -3,7 +3,9 @@ package smilebot.model;
 import org.hibernate.annotations.Cascade;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -27,11 +29,15 @@ public class User implements ISnowflake {
             )
     private Set<Server> servers = new HashSet<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Message> messages;
+
     public User() {}
 
     public User(long snowflake, String name) {
         this.snowflake = snowflake;
         this.name = name;
+        messages = new ArrayList<>();
     }
 
     public String getName() {
@@ -56,6 +62,18 @@ public class User implements ISnowflake {
 
     public void setServers(Set<Server> servers) {
         this.servers = servers;
+    }
+
+    public void addMessage(Message message) {
+        messages.add(message);
+    }
+
+    public List<Message> getMessages() {
+        return messages;
+    }
+
+    public void setMessages(List<Message> messages) {
+        this.messages = messages;
     }
 
     @Override

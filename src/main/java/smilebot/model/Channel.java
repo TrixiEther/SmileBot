@@ -1,6 +1,8 @@
 package smilebot.model;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table (name = "channels")
@@ -16,11 +18,15 @@ public class Channel implements ISnowflake {
     @JoinColumn(name = "server_sn")
     private Server server;
 
+    @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Message> messages;
+
     public Channel() {}
 
     public Channel(long snowflake, String name) {
         this.snowflake = snowflake;
         this.name = name;
+        messages = new ArrayList<>();
     }
 
     public String getName() {
@@ -37,6 +43,18 @@ public class Channel implements ISnowflake {
 
     public void setServer(Server server) {
         this.server = server;
+    }
+
+    public void addMessage(Message message) {
+        this.messages.add(message);
+    }
+
+    public List<Message> getMessages() {
+        return messages;
+    }
+
+    public void setMessages(List<Message> messages) {
+        this.messages = messages;
     }
 
     @Override
