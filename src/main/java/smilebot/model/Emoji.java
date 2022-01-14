@@ -4,7 +4,7 @@ import javax.persistence.*;
 
 @Entity
 @Table(name = "emoji")
-public class Emoji extends DiscordEntity {
+public class Emoji implements ISnowflake {
 
     @Id
     @Column(name = "e_snowflake")
@@ -28,6 +28,10 @@ public class Emoji extends DiscordEntity {
         return emoji;
     }
 
+    public String getEmojiText() {
+        return ":" + emoji + ":";
+    }
+
     public void setEmoji(String emoji) {
         this.emoji = emoji;
     }
@@ -47,4 +51,13 @@ public class Emoji extends DiscordEntity {
                 ", emoji = " + emoji + "}";
     }
 
+    @Override
+    public long getSnowflake() {
+        return this.snowflake;
+    }
+
+    @Override
+    public void setSnowflake(long snowflake) {
+        this.snowflake = snowflake;
+    }
 }

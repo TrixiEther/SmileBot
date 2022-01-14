@@ -4,7 +4,7 @@ import javax.persistence.*;
 
 @Entity
 @Table (name = "channels")
-public class Channel extends DiscordEntity {
+public class Channel implements ISnowflake {
 
     @Id
     @Column(name = "c_snowflake")
@@ -44,5 +44,15 @@ public class Channel extends DiscordEntity {
         return "model.Channel{" +
                 "snowflake = " + snowflake +
                 ", name = " + name + "}";
+    }
+
+    @Override
+    public long getSnowflake() {
+        return this.snowflake;
+    }
+
+    @Override
+    public void setSnowflake(long snowflake) {
+        this.snowflake = snowflake;
     }
 }

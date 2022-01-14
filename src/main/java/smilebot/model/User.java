@@ -8,7 +8,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "users")
-public class User extends DiscordEntity {
+public class User implements ISnowflake {
 
     @Id
     @Column(name = "u_snowflake", unique = true)
@@ -65,4 +65,13 @@ public class User extends DiscordEntity {
                 "name = " + name + "}";
     }
 
+    @Override
+    public long getSnowflake() {
+        return this.snowflake;
+    }
+
+    @Override
+    public void setSnowflake(long snowflake) {
+        this.snowflake = snowflake;
+    }
 }
