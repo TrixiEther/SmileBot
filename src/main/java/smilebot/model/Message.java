@@ -7,19 +7,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "emoji")
-public class Emoji implements ISnowflake {
+@Table(name = "messages")
+public class Message implements ISnowflake {
 
     @Id
-    @Column(name = "e_snowflake")
+    @Column(name = "m_snowflake")
     private long snowflake;
 
-    @Column(name = "content")
-    private String emoji;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "channel_sn")
+    private Channel channel;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "server_sn")
-    private Server server;
+    @JoinColumn(name = "user_sn")
+    private User user;
 
 
     @Cascade({
@@ -27,54 +28,45 @@ public class Emoji implements ISnowflake {
             org.hibernate.annotations.CascadeType.MERGE,
             org.hibernate.annotations.CascadeType.PERSIST
     })
-    @OneToMany(mappedBy = "emoji", orphanRemoval = true)
+    @OneToMany(mappedBy = "message", orphanRemoval = true)
     private List<EmojiInMessageResult> emojiInMessageResults;
 
-    public Emoji() {};
+    public Message() {}
 
-    public Emoji(long snowflake, String emoji) {
-        this.emoji = emoji;
+    public Message(long snowflake, User user, Channel channel) {
         this.snowflake = snowflake;
+        this.user = user;
+        this.channel = channel;
         emojiInMessageResults = new ArrayList<>();
     }
 
-    public String getEmoji() {
-        return emoji;
+    public Channel getChannel() {
+        return this.channel;
     }
 
-    public String getEmojiText() {
-        return ":" + emoji + ":";
+    public void setChannel(Channel channel) {
+        this.channel = channel;
     }
 
-    public void setEmoji(String emoji) {
-        this.emoji = emoji;
+    public User getUser() {
+        return user;
     }
 
-    public Server getServer() {
-        return server;
+    public void setUser(User user) {
+        this.user = user;
     }
 
-    public void setServer(Server server) {
-        this.server = server;
+
+    public List<EmojiInMessageResult> getEmojiInMessageResults() {
+        return emojiInMessageResults;
     }
 
     public void setEmojiInMessageResults(List<EmojiInMessageResult> emojiInMessageResults) {
         this.emojiInMessageResults = emojiInMessageResults;
     }
 
-    public List<EmojiInMessageResult> getEmojiInMessageResults() {
-        return emojiInMessageResults;
-    }
-
     public void addEmojiInMessageResult(EmojiInMessageResult emojiInMessageResult) {
         this.emojiInMessageResults.add(emojiInMessageResult);
-    }
-
-    @Override
-    public String toString() {
-        return "model.Emoji{" +
-                "snowflake = " + snowflake +
-                ", emoji = " + emoji + "}";
     }
 
     @Override
@@ -86,4 +78,5 @@ public class Emoji implements ISnowflake {
     public void setSnowflake(long snowflake) {
         this.snowflake = snowflake;
     }
+
 }

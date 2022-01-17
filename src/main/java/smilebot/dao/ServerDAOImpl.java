@@ -1,5 +1,7 @@
 package smilebot.dao;
 
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import smilebot.model.Channel;
 import smilebot.model.Emoji;
 import smilebot.model.Server;

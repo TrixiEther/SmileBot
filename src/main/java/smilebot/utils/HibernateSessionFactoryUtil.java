@@ -1,12 +1,9 @@
 package smilebot.utils;
 
-import smilebot.model.Channel;
-import smilebot.model.Emoji;
-import smilebot.model.Server;
+import smilebot.model.*;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
-import smilebot.model.User;
 
 public class HibernateSessionFactoryUtil {
 
@@ -22,6 +19,8 @@ public class HibernateSessionFactoryUtil {
                 configuration.addAnnotatedClass(Channel.class);
                 configuration.addAnnotatedClass(Emoji.class);
                 configuration.addAnnotatedClass(User.class);
+                configuration.addAnnotatedClass(Message.class);
+                configuration.addAnnotatedClass(EmojiInMessageResult.class);
                 StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder()
                         .applySettings(configuration.getProperties());
                 sessionFactory = configuration.buildSessionFactory(builder.build());
