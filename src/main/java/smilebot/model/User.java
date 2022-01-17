@@ -29,7 +29,12 @@ public class User implements ISnowflake {
             )
     private Set<Server> servers = new HashSet<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Cascade({
+            org.hibernate.annotations.CascadeType.SAVE_UPDATE,
+            org.hibernate.annotations.CascadeType.MERGE,
+            org.hibernate.annotations.CascadeType.PERSIST
+    })
+    @OneToMany(mappedBy = "user", orphanRemoval = true)
     private List<Message> messages;
 
     public User() {}
@@ -74,6 +79,10 @@ public class User implements ISnowflake {
 
     public void setMessages(List<Message> messages) {
         this.messages = messages;
+    }
+
+    public boolean isContainMessage(Message message) {
+        return this.messages.contains(message);
     }
 
     @Override

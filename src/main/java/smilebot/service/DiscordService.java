@@ -2,9 +2,7 @@ package smilebot.service;
 
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.requests.RestAction;
 import smilebot.dao.ServerDAOImpl;
-import smilebot.dao.UserDAOImpl;
 import smilebot.helpers.EmojiCount;
 import smilebot.helpers.MessageAnalysisHelper;
 import smilebot.helpers.MessageAnalysisResult;
@@ -47,20 +45,20 @@ public class DiscordService {
             server.addUser(user);
         }
 
-        System.out.println("Ready to save");
-        serverDAO.save(server);
-        System.out.println("Server saved!");
-
         System.out.println("Starting message analysis...");
         for (TextChannel tc : guild.getTextChannels()) {
             analysisChannelMessages(tc, server);
         }
 
-        serverDAO.update(server);
+        System.out.println("Ready to save");
+        serverDAO.save(server);
+        System.out.println("Server saved!");
 
     }
 
     private static void analysisChannelMessages(TextChannel tc, Server server) {
+
+        System.out.println("Channel = " + tc.getName());
 
         MessageAnalysisHelper mah = new MessageAnalysisHelper(server.getEmojis());
 
@@ -84,62 +82,20 @@ public class DiscordService {
 
                 if (!lastMessageProcessed) {
                     Message lastMessage = tc.retrieveMessageById(lastId).complete();
-                    tempMessages.add(lastMessage);
                     lastMessageProcessed = true;
+                    analyzeContent(lastMessage, server, mah);
                 }
 
                 if (tempMessages.size() > 0) {
                     for (Message m : tempMessages) {
-                        MessageAnalysisResult mar = mah.analysisMessageContent(m.getContentDisplay());
-
-                        if (mar.getResults().size() != 0) {
-
-                            //
-                            // If the user and channel is in the server list,
-                            // then we will process the message and add it to the statistics
-                            // If not, then (for now) ignore
-                            //
-
-                            User entityUser = server.findUserBySnowflake(m.getAuthor().getIdLong());
-                            Channel entityChannel = server.findChannelBySnowflake(m.getChannel().getIdLong());
-                            if (entityUser != null && entityChannel != null) {
-
-                                smilebot.model.Message message = new smilebot.model.Message(
-                                        m.getIdLong(),
-                                        entityUser,
-                                        entityChannel
-                                );
-
-                                for (EmojiCount ec : mar.getResults()) {
-
-                                    Emoji entityEmoji = server.findEmojiBySnowflake(ec.getSnowflake());
-
-                                    if (entityEmoji != null) {
-
-                                        EmojiInMessageResult eimr = new EmojiInMessageResult(message, entityEmoji, ec.getCount());
-
-                                        eimr.setMessage(message);
-                                        eimr.setEmoji(entityEmoji);
-                                        entityEmoji.addEmojiInMessageResult(eimr);
-                                        message.addEmojiInMessageResult(eimr);
-
-                                        message.setChannel(entityChannel);
-                                        entityChannel.addMessage(message);
-
-                                        message.setUser(entityUser);
-                                        entityUser.addMessage(message);
-
-                                    }
-                                }
-
-                            }
-
-                        }
-
+                        analyzeContent(m, server, mah);
                         count++;
                     }
+
                     lastId = tempMessages.get(tempMessages.size() - 1).getId();
+
                     tempMessages.clear();
+
                 } else {
                     tempMessages.clear();
                     break;
@@ -151,5 +107,55 @@ public class DiscordService {
             System.out.println("Error in analysisChannelMessages: " + e.getMessage());
         }
 
+    }
+
+    private static void analyzeContent(Message m, Server server, MessageAnalysisHelper mah) {
+
+        MessageAnalysisResult mar = mah.analysisMessageContent(m.getContentDisplay());
+
+        if (mar.getResults().size() != 0) {
+
+            //
+            // If the user and channel is in the server list,
+            // then we will process the message and add it to the statistics
+            // If not, then (for now) ignore
+            //
+
+            User entityUser = server.findUserBySnowflake(m.getAuthor().getIdLong());
+            Channel entityChannel = server.findChannelBySnowflake(m.getChannel().getIdLong());
+
+            if (entityUser != null && entityChannel != null) {
+
+                smilebot.model.Message message = new smilebot.model.Message(
+                        m.getIdLong(),
+                        entityUser,
+                        entityChannel
+                );
+
+                for (EmojiCount ec : mar.getResults()) {
+
+                    Emoji entityEmoji = server.findEmojiBySnowflake(ec.getSnowflake());
+
+                    if (entityEmoji != null) {
+
+                        EmojiInMessageResult eimr = new EmojiInMessageResult(message, entityEmoji, ec.getCount());
+
+                        eimr.setMessage(message);
+                        eimr.setEmoji(entityEmoji);
+                        entityEmoji.addEmojiInMessageResult(eimr);
+                        message.addEmojiInMessageResult(eimr);
+
+                        if (!entityChannel.isContainMessage(message))
+                            entityChannel.addMessage(message);
+
+                        if (!entityUser.isContainMessage(message))
+                            entityUser.addMessage(message);
+
+                    }
+                }
+
+            }
+
+        }
     }
 }

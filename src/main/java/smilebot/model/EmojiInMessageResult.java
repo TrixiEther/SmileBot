@@ -14,11 +14,13 @@ public class EmojiInMessageResult {
     @JoinColumn(name = "message_sn")
     private Message message;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "emoji_sn")
     private Emoji emoji;
 
     private int count;
+
+    public EmojiInMessageResult() {};
 
     public EmojiInMessageResult(Message message, Emoji emoji, int count) {
         this.message = message;

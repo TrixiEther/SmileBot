@@ -1,5 +1,7 @@
 package smilebot.model;
 
+import org.hibernate.annotations.Cascade;
+
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +57,10 @@ public class Channel implements ISnowflake {
 
     public void setMessages(List<Message> messages) {
         this.messages = messages;
+    }
+
+    public boolean isContainMessage(Message message) {
+        return this.messages.contains(message);
     }
 
     @Override

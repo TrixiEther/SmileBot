@@ -1,5 +1,7 @@
 package smilebot.model;
 
+import org.hibernate.annotations.Cascade;
+
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +22,13 @@ public class Message implements ISnowflake {
     @JoinColumn(name = "user_sn")
     private User user;
 
-    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+
+    @Cascade({
+            org.hibernate.annotations.CascadeType.SAVE_UPDATE,
+            org.hibernate.annotations.CascadeType.MERGE,
+            org.hibernate.annotations.CascadeType.PERSIST
+    })
+    @OneToMany(mappedBy = "message", orphanRemoval = true)
     private List<EmojiInMessageResult> emojiInMessageResults;
 
     public Message() {}
@@ -47,6 +55,7 @@ public class Message implements ISnowflake {
     public void setUser(User user) {
         this.user = user;
     }
+
 
     public List<EmojiInMessageResult> getEmojiInMessageResults() {
         return emojiInMessageResults;

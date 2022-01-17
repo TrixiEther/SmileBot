@@ -1,5 +1,7 @@
 package smilebot.model;
 
+import org.hibernate.annotations.Cascade;
+
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +21,13 @@ public class Emoji implements ISnowflake {
     @JoinColumn(name = "server_sn")
     private Server server;
 
-    @OneToMany(mappedBy = "emoji", cascade = CascadeType.ALL, orphanRemoval = true)
+
+    @Cascade({
+            org.hibernate.annotations.CascadeType.SAVE_UPDATE,
+            org.hibernate.annotations.CascadeType.MERGE,
+            org.hibernate.annotations.CascadeType.PERSIST
+    })
+    @OneToMany(mappedBy = "emoji", orphanRemoval = true)
     private List<EmojiInMessageResult> emojiInMessageResults;
 
     public Emoji() {};
