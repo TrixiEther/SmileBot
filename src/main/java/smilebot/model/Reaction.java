@@ -3,8 +3,8 @@ package smilebot.model;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "emoji_in_message")
-public class EmojiInMessageResult {
+@Table(name = "reaction_to_messages")
+public class Reaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -15,17 +15,19 @@ public class EmojiInMessageResult {
     private Message message;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_sn")
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "emoji_sn")
     private Emoji emoji;
 
-    private int count;
+    public Reaction() {};
 
-    public EmojiInMessageResult() {};
-
-    public EmojiInMessageResult(Message message, Emoji emoji, int count) {
+    public Reaction(Message message, User user, Emoji emoji) {
         this.message = message;
+        this.user = user;
         this.emoji = emoji;
-        this.count = count;
     }
 
     public Message getMessage() {
@@ -36,12 +38,12 @@ public class EmojiInMessageResult {
         this.message = message;
     }
 
-    public void setCount(int count) {
-        this.count = count;
+    public User getUser() {
+        return user;
     }
 
-    public int getCount() {
-        return count;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public Emoji getEmoji() {

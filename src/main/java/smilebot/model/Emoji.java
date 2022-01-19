@@ -17,10 +17,9 @@ public class Emoji implements ISnowflake {
     @Column(name = "content")
     private String emoji;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "server_sn")
     private Server server;
-
 
     @Cascade({
             org.hibernate.annotations.CascadeType.SAVE_UPDATE,
@@ -30,12 +29,21 @@ public class Emoji implements ISnowflake {
     @OneToMany(mappedBy = "emoji", orphanRemoval = true)
     private List<EmojiInMessageResult> emojiInMessageResults;
 
+    @Cascade({
+            org.hibernate.annotations.CascadeType.SAVE_UPDATE,
+            org.hibernate.annotations.CascadeType.MERGE,
+            org.hibernate.annotations.CascadeType.PERSIST
+    })
+    @OneToMany(mappedBy = "emoji", orphanRemoval = true)
+    private List<Reaction> reactions;
+
     public Emoji() {};
 
     public Emoji(long snowflake, String emoji) {
         this.emoji = emoji;
         this.snowflake = snowflake;
         emojiInMessageResults = new ArrayList<>();
+        reactions = new ArrayList<>();
     }
 
     public String getEmoji() {
@@ -68,6 +76,18 @@ public class Emoji implements ISnowflake {
 
     public void addEmojiInMessageResult(EmojiInMessageResult emojiInMessageResult) {
         this.emojiInMessageResults.add(emojiInMessageResult);
+    }
+
+    public List<Reaction> getReactions() {
+        return reactions;
+    }
+
+    public void setReactions(List<Reaction> reactions) {
+        this.reactions = reactions;
+    }
+
+    public void addReaction(Reaction reaction) {
+        this.reactions.add(reaction);
     }
 
     @Override

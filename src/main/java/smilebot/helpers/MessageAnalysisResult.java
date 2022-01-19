@@ -5,7 +5,13 @@ import java.util.List;
 
 public class MessageAnalysisResult {
 
-    private List<EmojiCount> inMessageEmojis = new ArrayList<>();
+    private List<EmojiCount> inMessageEmojis;
+    private List<UserReaction> userReactions;
+
+    public MessageAnalysisResult() {
+        inMessageEmojis = new ArrayList<>();
+        userReactions = new ArrayList<>();
+    }
 
     public void addEmoji(EmojiCount ec) {
         inMessageEmojis.add(ec);
@@ -15,4 +21,11 @@ public class MessageAnalysisResult {
         return inMessageEmojis;
     }
 
+    public void addReaction(UserReaction userReaction) {
+        userReactions.add(userReaction);
+    }
+
+    public List<UserReaction> getUserReactions() {
+        return userReactions;
+    }
 }

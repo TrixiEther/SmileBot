@@ -21,6 +21,7 @@ public class HibernateSessionFactoryUtil {
                 configuration.addAnnotatedClass(User.class);
                 configuration.addAnnotatedClass(Message.class);
                 configuration.addAnnotatedClass(EmojiInMessageResult.class);
+                configuration.addAnnotatedClass(Reaction.class);
                 StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder()
                         .applySettings(configuration.getProperties());
                 sessionFactory = configuration.buildSessionFactory(builder.build());

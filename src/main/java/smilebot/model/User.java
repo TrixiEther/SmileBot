@@ -18,11 +18,6 @@ public class User implements ISnowflake {
 
     private String name;
 
-    @Cascade({
-            org.hibernate.annotations.CascadeType.SAVE_UPDATE,
-            org.hibernate.annotations.CascadeType.MERGE,
-            org.hibernate.annotations.CascadeType.PERSIST
-    })
     @ManyToMany(mappedBy = "users",
             targetEntity = Server.class,
             fetch = FetchType.EAGER
@@ -37,12 +32,21 @@ public class User implements ISnowflake {
     @OneToMany(mappedBy = "user", orphanRemoval = true)
     private List<Message> messages;
 
+    @Cascade({
+            org.hibernate.annotations.CascadeType.SAVE_UPDATE,
+            org.hibernate.annotations.CascadeType.MERGE,
+            org.hibernate.annotations.CascadeType.PERSIST
+    })
+    @OneToMany(mappedBy = "user", orphanRemoval = true)
+    private List<Reaction> reactions;
+
     public User() {}
 
     public User(long snowflake, String name) {
         this.snowflake = snowflake;
         this.name = name;
         messages = new ArrayList<>();
+        reactions = new ArrayList<>();
     }
 
     public String getName() {
@@ -83,6 +87,18 @@ public class User implements ISnowflake {
 
     public boolean isContainMessage(Message message) {
         return this.messages.contains(message);
+    }
+
+    public List<Reaction> getReactions() {
+        return reactions;
+    }
+
+    public void setReactions(List<Reaction> reactions) {
+        this.reactions = reactions;
+    }
+
+    public void addReaction(Reaction reaction) {
+        this.reactions.add(reaction);
     }
 
     @Override
