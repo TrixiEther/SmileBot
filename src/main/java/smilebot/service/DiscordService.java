@@ -6,6 +6,7 @@ import smilebot.dao.ServerDAOImpl;
 import smilebot.helpers.EmojiCount;
 import smilebot.helpers.MessageAnalysisHelper;
 import smilebot.helpers.MessageAnalysisResult;
+import smilebot.helpers.UserReaction;
 import smilebot.model.*;
 import smilebot.model.Emoji;
 import smilebot.model.User;
@@ -111,9 +112,9 @@ public class DiscordService {
 
     private static void analyzeContent(Message m, Server server, MessageAnalysisHelper mah) {
 
-        MessageAnalysisResult mar = mah.analysisMessageContent(m.getContentDisplay());
+        MessageAnalysisResult mar = mah.analysisMessageContent(m);
 
-        if (mar.getResults().size() != 0) {
+        if (mar.getResults().size() != 0 || mar.getUserReactions().size() != 0) {
 
             //
             // If the user and channel is in the server list,
@@ -140,8 +141,6 @@ public class DiscordService {
 
                         EmojiInMessageResult eimr = new EmojiInMessageResult(message, entityEmoji, ec.getCount());
 
-                        eimr.setMessage(message);
-                        eimr.setEmoji(entityEmoji);
                         entityEmoji.addEmojiInMessageResult(eimr);
                         message.addEmojiInMessageResult(eimr);
 
@@ -152,6 +151,30 @@ public class DiscordService {
                             entityUser.addMessage(message);
 
                     }
+                }
+
+                for (UserReaction ur : mar.getUserReactions()) {
+
+                    User reactUser = server.findUserBySnowflake(ur.getUserSnowflake());
+                    Emoji reactEmoji = server.findEmojiBySnowflake(ur.getEmojiSnowflake());
+
+                    Reaction reaction = new Reaction(message,reactUser, reactEmoji);
+
+                    reactUser.addReaction(reaction);
+                    reactEmoji.addReaction(reaction);
+                    message.addReaction(reaction);
+
+                    //
+                    //  Messages to which users reacted must also be associated with the channel,
+                    //  and also with the user who left the reaction
+                    //
+
+                    if (!entityChannel.isContainMessage(message))
+                        entityChannel.addMessage(message);
+
+                    if (!reactUser.isContainMessage(message))
+                        reactUser.addMessage(message);
+
                 }
 
             }

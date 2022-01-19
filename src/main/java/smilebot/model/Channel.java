@@ -1,6 +1,7 @@
 package smilebot.model;
 
 import org.hibernate.annotations.Cascade;
+import org.springframework.lang.NonNull;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -16,7 +17,7 @@ public class Channel implements ISnowflake {
 
     private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "server_sn")
     private Server server;
 
