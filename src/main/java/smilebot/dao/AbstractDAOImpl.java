@@ -15,7 +15,7 @@ public abstract class AbstractDAOImpl<T> implements AbstractDAO<T> {
                 .resolveTypeArgument(getClass(), AbstractDAOImpl.class);
     }
 
-    public T findById(int id) {
+    public T findById(long id) {
         return HibernateSessionFactoryUtil.getSessionFactory().openSession().get(genericType, id);
     }
 
@@ -37,6 +37,13 @@ public abstract class AbstractDAOImpl<T> implements AbstractDAO<T> {
         Session session = HibernateSessionFactoryUtil.getSessionFactory().openSession();
         Transaction trx = session.beginTransaction();
         session.delete(entity);
+        trx.commit();
+        session.close();
+    }
+    public void merge(T entity) {
+        Session session = HibernateSessionFactoryUtil.getSessionFactory().openSession();
+        Transaction trx = session.beginTransaction();
+        session.merge(entity);
         trx.commit();
         session.close();
     }

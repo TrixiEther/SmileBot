@@ -2,6 +2,8 @@ package smilebot.service;
 
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message;
+import org.hibernate.Transaction;
+import smilebot.dao.MessageDAOImpl;
 import smilebot.dao.ServerDAOImpl;
 import smilebot.helpers.EmojiCount;
 import smilebot.helpers.MessageAnalysisHelper;
@@ -12,11 +14,13 @@ import smilebot.model.Emoji;
 import smilebot.model.User;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class DiscordService {
 
     private static final ServerDAOImpl serverDAO = new ServerDAOImpl();
+    private static final MessageDAOImpl messageDAO = new MessageDAOImpl();
 
     public static boolean isServerExists(String snowflake) {
         Server s = serverDAO
@@ -54,6 +58,24 @@ public class DiscordService {
         System.out.println("Ready to save");
         serverDAO.save(server);
         System.out.println("Server saved!");
+
+    }
+
+    public static void processNewMessage(Message message) {
+
+        Date current = new Date();
+
+        System.out.println("Start: " + current);
+        Server server = (Server)serverDAO.findById(message.getGuild().getIdLong());
+        System.out.println("End: " + current);
+
+        if (server != null) {
+            System.out.println("Found server: " + server.getName());
+            MessageAnalysisHelper mah = new MessageAnalysisHelper(server.getEmojis());
+            analyzeContent(message, server, mah);
+        }
+
+        serverDAO.merge(server);
 
     }
 

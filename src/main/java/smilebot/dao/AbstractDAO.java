@@ -2,7 +2,7 @@ package smilebot.dao;
 
 public interface AbstractDAO<T> {
 
-    T findById(int id);
+    T findById(long id);
 
     void save(T server);
     void update(T server);
