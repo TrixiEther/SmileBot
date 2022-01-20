@@ -2,13 +2,11 @@ package smilebot;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import smilebot.configuration.BotConfigurationProperties;
 import smilebot.monitored.MessageListener;
+import smilebot.utils.DiscordEventsPool;
 
 import javax.security.auth.login.LoginException;
 
@@ -25,10 +23,15 @@ public class SmileBotManager {
     }
 
     public void startSmileBot() throws LoginException {
+
         JDA jda = JDABuilder
                 .createDefault(configuration.getToken())
                 .build();
         jda.addEventListener(new MessageListener());
+
+        System.out.println("Start pool");
+        DiscordEventsPool.getInstance().start();
+
     }
 
     public static SmileBotManager getInstance() {
