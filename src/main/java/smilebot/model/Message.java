@@ -8,17 +8,14 @@ import java.util.List;
 
 @Entity
 @Table(name = "messages")
-public class Message implements ISnowflake {
+@AttributeOverride(name = "snowflake", column = @Column(name = "m_snowflake"))
+public class Message extends AbstractDiscordEntity {
 
-    @Id
-    @Column(name = "m_snowflake")
-    private long snowflake;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "channel_sn")
     private Channel channel;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "user_sn")
     private User user;
 
@@ -77,6 +74,10 @@ public class Message implements ISnowflake {
         this.emojiInMessageResults.add(emojiInMessageResult);
     }
 
+    public void removeAllEmojiInMessageResults() {
+        this.emojiInMessageResults.clear();
+    }
+
     public List<Reaction> getReactions() {
         return reactions;
     }
@@ -89,14 +90,8 @@ public class Message implements ISnowflake {
         this.reactions.add(reaction);
     }
 
-    @Override
-    public long getSnowflake() {
-        return this.snowflake;
-    }
-
-    @Override
-    public void setSnowflake(long snowflake) {
-        this.snowflake = snowflake;
+    public void removeAllReactions() {
+        this.reactions.clear();
     }
 
 }

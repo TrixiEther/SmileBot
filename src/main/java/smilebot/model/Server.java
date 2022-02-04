@@ -6,17 +6,13 @@ import org.hibernate.annotations.LazyCollectionOption;
 
 import javax.persistence.*;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 @Entity
 @Table(name = "servers")
-public class Server implements ISnowflake {
-
-    @Id
-    @Column(name = "s_snowflake", unique = true)
-    private long snowflake;
+@AttributeOverride(name = "snowflake", column = @Column(name = "s_snowflake"))
+public class Server extends AbstractDiscordEntity implements IServer {
 
     private String name;
 
@@ -37,12 +33,12 @@ public class Server implements ISnowflake {
             joinColumns = @JoinColumn(name = "server_sn"),
             inverseJoinColumns = @JoinColumn(name = "user_sn")
     )
-    private Set<User> users = new HashSet<>();
+    private List<User> users = new ArrayList<>();
 
     public Server() {}
 
     public Server(long snowflake, String name) {
-        this.snowflake = snowflake;
+        super(snowflake);
         this.name = name;
         channels = new ArrayList<>();
         emojis = new ArrayList<>();
@@ -68,6 +64,7 @@ public class Server implements ISnowflake {
         emojis.remove(emoji);
     }
 
+    @Override
     public Emoji findEmojiBySnowflake(long snowflake) {
         for (Emoji e : emojis) {
             if (e.getSnowflake() == snowflake)
@@ -80,10 +77,12 @@ public class Server implements ISnowflake {
         users.remove(user);
     }
 
+    @Override
     public String getName() {
         return this.name;
     }
 
+    @Override
     public void setName(String name) {
         this.name = name;
     }
@@ -96,6 +95,7 @@ public class Server implements ISnowflake {
         this.channels = channels;
     }
 
+    @Override
     public Channel findChannelBySnowflake(long snowflake) {
         for (Channel c : channels) {
             if (c.getSnowflake() == snowflake)
@@ -112,14 +112,15 @@ public class Server implements ISnowflake {
         this.emojis = emojis;
     }
 
-    public Set<User> getUsers() {
+    public List<User> getUsers() {
         return users;
     }
 
-    public void setUsers(Set<User> users) {
+    public void setUsers(List<User> users) {
         this.users = users;
     }
 
+    @Override
     public User findUserBySnowflake(long snowflake) {
         for (User u : users) {
             if (u.getSnowflake() == snowflake)
@@ -135,13 +136,4 @@ public class Server implements ISnowflake {
                 "name = " + name + "}";
     }
 
-    @Override
-    public long getSnowflake() {
-        return this.snowflake;
-    }
-
-    @Override
-    public void setSnowflake(long snowflake) {
-        this.snowflake = snowflake;
-    }
 }

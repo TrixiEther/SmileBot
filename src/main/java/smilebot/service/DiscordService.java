@@ -2,7 +2,6 @@ package smilebot.service;
 
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message;
-import org.hibernate.Transaction;
 import smilebot.dao.MessageDAOImpl;
 import smilebot.dao.ServerDAOImpl;
 import smilebot.helpers.EmojiCount;
@@ -12,15 +11,19 @@ import smilebot.helpers.UserReaction;
 import smilebot.model.*;
 import smilebot.model.Emoji;
 import smilebot.model.User;
+import smilebot.utils.CachedData;
+import smilebot.utils.CachedServer;
 
+import javax.swing.text.html.parser.Entity;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class DiscordService {
 
     private static final ServerDAOImpl serverDAO = new ServerDAOImpl();
     private static final MessageDAOImpl messageDAO = new MessageDAOImpl();
+
+    private static final CachedData cachedData = new CachedData();
 
     public static boolean isServerExists(String snowflake) {
         Server s = serverDAO
@@ -56,26 +59,108 @@ public class DiscordService {
         }
 
         System.out.println("Ready to save");
+        serverDAO.openSession();
         serverDAO.save(server);
+        serverDAO.closeSession();
         System.out.println("Server saved!");
+
+        cachedData.addServer(server.getSnowflake(),
+                server.getName(),
+                server.getEmojis(),
+                server.getUsers(),
+                server.getChannels()
+        );
 
     }
 
     public static void processNewMessage(Message message) {
 
-        Date current = new Date();
+        CachedServer cachedServer = getCachedServer(message.getGuild().getIdLong());
 
-        System.out.println("Start: " + current);
-        Server server = (Server)serverDAO.findById(message.getGuild().getIdLong());
-        System.out.println("End: " + current);
+        if (cachedServer != null) {
 
-        if (server != null) {
-            System.out.println("Found server: " + server.getName());
-            MessageAnalysisHelper mah = new MessageAnalysisHelper(server.getEmojis());
-            analyzeContent(message, server, mah);
+            System.out.println("Found server: " + cachedServer.getName());
+            MessageAnalysisHelper mah = new MessageAnalysisHelper(cachedServer.getEmojis());
+            smilebot.model.Message entityMessage = analyzeContent(message, cachedServer, mah, null);
+
+            if (entityMessage != null) {
+
+                System.out.println("Ready to save new message");
+                messageDAO.openSession();
+                messageDAO.merge(entityMessage);
+                messageDAO.closeSession();
+            }
+
+        } else {
+            System.out.println("Error, server not found after loading, nothing to do...");
         }
 
-        serverDAO.merge(server);
+    }
+
+    public static void processDeleteMessage(long snowflake) {
+
+        messageDAO.openSession();
+        smilebot.model.Message entityMessage = (smilebot.model.Message) messageDAO.findById(snowflake);
+        if (entityMessage != null) {
+            messageDAO.delete(entityMessage);
+        }
+        messageDAO.closeSession();
+
+    }
+
+    public static void processUpdateMessage(long snowflake, Message message) {
+
+        System.out.println("Message has been updated, processing...");
+
+        messageDAO.openSession();
+        smilebot.model.Message entityMessage = (smilebot.model.Message) messageDAO.findById(snowflake);
+        CachedServer cachedServer = getCachedServer(message.getGuild().getIdLong());
+
+        if (cachedServer != null) {
+
+            if (entityMessage != null) {
+
+                System.out.println("Message found in the database...");
+
+                entityMessage.removeAllEmojiInMessageResults();
+                messageDAO.merge(entityMessage);
+
+                MessageAnalysisHelper mah = new MessageAnalysisHelper(cachedServer.getEmojis());
+                analyzeContent(message, cachedServer, mah, entityMessage);
+
+                if (entityMessage.getEmojiInMessageResults().size() == 0 && entityMessage.getReactions().size() == 0) {
+                    System.out.println("No emoji, no reactions for now, delete...");
+                    messageDAO.delete(entityMessage);
+                } else {
+                    System.out.println("Updating...");
+                    messageDAO.merge(entityMessage);
+                }
+
+            } else {
+
+                System.out.println("Message not found in the database...");
+
+                entityMessage = new smilebot.model.Message(
+                        message.getIdLong(),
+                        new User(message.getAuthor().getIdLong(), message.getAuthor().getName()),
+                        new Channel(message.getChannel().getIdLong(), message.getChannel().getName())
+                );
+
+                MessageAnalysisHelper mah = new MessageAnalysisHelper(cachedServer.getEmojis());
+                analyzeContent(message, cachedServer, mah, entityMessage);
+
+                if (entityMessage.getEmojiInMessageResults().size() != 0 || entityMessage.getReactions().size() != 0) {
+                    System.out.println("The message now contains at least one emoji, so I'll save it");
+                    messageDAO.merge(entityMessage);
+                } else {
+                    System.out.println("The message did not contain emojis after editing, nothing to do...");
+                }
+
+            }
+
+        }
+
+        messageDAO.closeSession();
 
     }
 
@@ -106,12 +191,12 @@ public class DiscordService {
                 if (!lastMessageProcessed) {
                     Message lastMessage = tc.retrieveMessageById(lastId).complete();
                     lastMessageProcessed = true;
-                    analyzeContent(lastMessage, server, mah);
+                    analyzeContentOnInit(lastMessage, server, mah);
                 }
 
                 if (tempMessages.size() > 0) {
                     for (Message m : tempMessages) {
-                        analyzeContent(m, server, mah);
+                        analyzeContentOnInit(m, server, mah);
                         count++;
                     }
 
@@ -132,7 +217,89 @@ public class DiscordService {
 
     }
 
-    private static void analyzeContent(Message m, Server server, MessageAnalysisHelper mah) {
+    private static CachedServer getCachedServer(long snowflake) {
+
+        CachedServer cachedServer = cachedData.getServerBySnowflake(snowflake);
+
+        if (cachedServer == null) {
+            System.out.println("Server " + snowflake
+                    + " not found in the cache, loading...");
+            serverDAO.openSession();
+            Server server = (Server) serverDAO.findById(snowflake);
+            cachedData.addServer(server.getSnowflake(),
+                    server.getName(),
+                    server.getEmojis(),
+                    server.getUsers(),
+                    server.getChannels()
+            );
+            serverDAO.closeSession();
+
+            cachedServer = cachedData.getServerBySnowflake(snowflake);
+
+        }
+
+        return cachedServer;
+    }
+
+    private static smilebot.model.Message analyzeContent(Message m, CachedServer server, MessageAnalysisHelper mah, smilebot.model.Message editableMessage) {
+
+        IUser user = server.findUserBySnowflake(m.getAuthor().getIdLong());
+        IChannel channel = server.findChannelBySnowflake(m.getChannel().getIdLong());
+
+        MessageAnalysisResult mar = mah.analysisMessageContent(m);
+        smilebot.model.Message entityMessage = null;
+
+        if (mar.getResults().size() != 0 || mar.getUserReactions().size() != 0) {
+
+            if (editableMessage == null) {
+
+                entityMessage = new smilebot.model.Message(
+                        m.getIdLong(),
+                        new User(user.getSnowflake(), user.getName()),
+                        new Channel(channel.getSnowflake(), channel.getName())
+                );
+
+            } else {
+                entityMessage = editableMessage;
+            }
+
+            for (EmojiCount ec : mar.getResults()) {
+
+                IEmoji emoji = server.findEmojiBySnowflake(ec.getSnowflake());
+
+                if (emoji != null) {
+
+                    Emoji entityEmoji = new Emoji(emoji.getSnowflake(), emoji.getEmoji());
+                    Channel entityChannel = new Channel(channel.getSnowflake(), channel.getName());
+                    User entityUser = new User(user.getSnowflake(), user.getName());
+
+                    EmojiInMessageResult eimr = new EmojiInMessageResult(
+                            entityMessage,
+                            entityEmoji,
+                            ec.getCount()
+                    );
+
+                    entityEmoji.addEmojiInMessageResult(eimr);
+                    entityMessage.addEmojiInMessageResult(eimr);
+
+                    if (!entityChannel.isContainMessage(entityMessage))
+                        entityChannel.addMessage(entityMessage);
+
+                    if (!entityUser.isContainMessage(entityMessage))
+                        entityUser.addMessage(entityMessage);
+
+                }
+            }
+
+            return entityMessage;
+
+        }
+
+        return null;
+
+    }
+
+    private static void analyzeContentOnInit(Message m, Server server, MessageAnalysisHelper mah) {
 
         MessageAnalysisResult mar = mah.analysisMessageContent(m);
 
@@ -202,5 +369,7 @@ public class DiscordService {
             }
 
         }
+
     }
+
 }

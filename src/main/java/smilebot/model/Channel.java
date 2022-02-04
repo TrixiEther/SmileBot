@@ -9,15 +9,12 @@ import java.util.List;
 
 @Entity
 @Table (name = "channels")
-public class Channel implements ISnowflake {
-
-    @Id
-    @Column(name = "c_snowflake")
-    private long snowflake;
+@AttributeOverride(name = "snowflake", column = @Column(name = "c_snowflake"))
+public class Channel extends AbstractDiscordEntity implements IChannel {
 
     private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "server_sn")
     private Server server;
 
@@ -32,10 +29,12 @@ public class Channel implements ISnowflake {
         messages = new ArrayList<>();
     }
 
+    @Override
     public String getName() {
         return this.name;
     }
 
+    @Override
     public void setName(String name) {
         this.name = name;
     }
@@ -71,13 +70,4 @@ public class Channel implements ISnowflake {
                 ", name = " + name + "}";
     }
 
-    @Override
-    public long getSnowflake() {
-        return this.snowflake;
-    }
-
-    @Override
-    public void setSnowflake(long snowflake) {
-        this.snowflake = snowflake;
-    }
 }

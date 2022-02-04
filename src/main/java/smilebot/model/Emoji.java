@@ -8,18 +8,15 @@ import java.util.List;
 
 @Entity
 @Table(name = "emoji")
-public class Emoji implements ISnowflake {
+@AttributeOverride(name = "snowflake", column = @Column(name = "e_snowflake"))
+public class Emoji extends AbstractDiscordEntity implements IEmoji {
 
-    @Id
-    @Column(name = "e_snowflake")
-    private long snowflake;
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "server_sn")
+    private Server server;
 
     @Column(name = "content")
     private String emoji;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "server_sn")
-    private Server server;
 
     @Cascade({
             org.hibernate.annotations.CascadeType.SAVE_UPDATE,
@@ -40,20 +37,23 @@ public class Emoji implements ISnowflake {
     public Emoji() {};
 
     public Emoji(long snowflake, String emoji) {
+        super(snowflake);
         this.emoji = emoji;
-        this.snowflake = snowflake;
         emojiInMessageResults = new ArrayList<>();
         reactions = new ArrayList<>();
     }
 
+    @Override
     public String getEmoji() {
         return emoji;
     }
 
+    @Override
     public String getEmojiText() {
         return ":" + emoji + ":";
     }
 
+    @Override
     public void setEmoji(String emoji) {
         this.emoji = emoji;
     }
@@ -97,13 +97,4 @@ public class Emoji implements ISnowflake {
                 ", emoji = " + emoji + "}";
     }
 
-    @Override
-    public long getSnowflake() {
-        return this.snowflake;
-    }
-
-    @Override
-    public void setSnowflake(long snowflake) {
-        this.snowflake = snowflake;
-    }
 }

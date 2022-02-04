@@ -3,15 +3,15 @@ package smilebot.helpers;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageReaction;
 import net.dv8tion.jda.api.entities.User;
-import smilebot.model.Emoji;
+import smilebot.model.IEmoji;
 
 import java.util.List;
 
 public class MessageAnalysisHelper {
 
-    private List<Emoji> emojis;
+    private List<? extends IEmoji> emojis;
 
-    public MessageAnalysisHelper(List<Emoji> emojis) {
+    public MessageAnalysisHelper(List<? extends IEmoji> emojis) {
         this.emojis = emojis;
     }
 
@@ -20,7 +20,7 @@ public class MessageAnalysisHelper {
         String text = message.getContentDisplay();
         MessageAnalysisResult mar = new MessageAnalysisResult();
 
-        for (Emoji e : emojis) {
+        for (IEmoji e : emojis) {
 
             if (text.length() != 0) {
 

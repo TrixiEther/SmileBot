@@ -10,11 +10,8 @@ import java.util.Set;
 
 @Entity
 @Table(name = "users")
-public class User implements ISnowflake {
-
-    @Id
-    @Column(name = "u_snowflake", unique = true)
-    private long snowflake;
+@AttributeOverride(name = "snowflake", column = @Column(name = "u_snowflake"))
+public class User extends AbstractDiscordEntity implements IUser {
 
     private String name;
 
@@ -49,10 +46,12 @@ public class User implements ISnowflake {
         reactions = new ArrayList<>();
     }
 
+    @Override
     public String getName() {
         return name;
     }
 
+    @Override
     public void setName(String name) {
         this.name = name;
     }
@@ -108,13 +107,4 @@ public class User implements ISnowflake {
                 "name = " + name + "}";
     }
 
-    @Override
-    public long getSnowflake() {
-        return this.snowflake;
-    }
-
-    @Override
-    public void setSnowflake(long snowflake) {
-        this.snowflake = snowflake;
-    }
 }
