@@ -5,7 +5,7 @@ import smilebot.service.DiscordService;
 
 public class InitializationEvent implements IDiscordEvent {
 
-    private Guild guild;
+    private final Guild guild;
 
     public InitializationEvent(Guild guild) {
         this.guild = guild;

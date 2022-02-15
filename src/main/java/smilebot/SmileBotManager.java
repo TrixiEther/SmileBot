@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.JDABuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import smilebot.configuration.BotConfigurationProperties;
+import smilebot.monitored.ChannelListener;
 import smilebot.monitored.MessageListener;
 import smilebot.utils.DiscordEventsPool;
 
@@ -28,6 +29,7 @@ public class SmileBotManager {
                 .createDefault(configuration.getToken())
                 .build();
         jda.addEventListener(new MessageListener());
+        jda.addEventListener(new ChannelListener());
 
         System.out.println("Start pool");
         DiscordEventsPool.getInstance().start();

@@ -15,12 +15,8 @@ public class MessageListener extends ListenerAdapter {
     public void onMessageReceived(@NotNull MessageReceivedEvent e) {
 
         System.out.println("Received messageReceiveEvent");
-
         IDiscordEvent event = DiscordEventFactory.processMessageReceivedEvent(e);
-
-        if (event != null) {
-            DiscordEventsPool.getInstance().addEvent(event);
-        }
+        DiscordEventsPool.getInstance().addEvent(event);
 
     }
 
@@ -28,12 +24,8 @@ public class MessageListener extends ListenerAdapter {
     public void onMessageDelete(@NotNull MessageDeleteEvent e) {
 
         System.out.println("Received messageDeleteEvent");
-
         IDiscordEvent event = DiscordEventFactory.processMessageDeleteEvent(e);
-
-        if (event != null) {
-            DiscordEventsPool.getInstance().addEvent(event);
-        }
+        DiscordEventsPool.getInstance().addEvent(event);
 
     }
 
@@ -41,12 +33,8 @@ public class MessageListener extends ListenerAdapter {
     public void onMessageUpdate(@NotNull MessageUpdateEvent e) {
 
         System.out.println("Received messageUpdateEvent");
-
         IDiscordEvent event = DiscordEventFactory.processMessageUpdateEvent(e);
-
-        if (event != null) {
-            DiscordEventsPool.getInstance().addEvent(event);
-        }
+        DiscordEventsPool.getInstance().addEvent(event);
 
     }
 
