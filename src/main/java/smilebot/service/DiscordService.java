@@ -2,8 +2,10 @@ package smilebot.service;
 
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message;
+import smilebot.dao.ChannelDAOImpl;
 import smilebot.dao.MessageDAOImpl;
 import smilebot.dao.ServerDAOImpl;
+import smilebot.events.ChannelCreatedEvent;
 import smilebot.helpers.EmojiCount;
 import smilebot.helpers.MessageAnalysisHelper;
 import smilebot.helpers.MessageAnalysisResult;
@@ -22,6 +24,7 @@ public class DiscordService {
 
     private static final ServerDAOImpl serverDAO = new ServerDAOImpl();
     private static final MessageDAOImpl messageDAO = new MessageDAOImpl();
+    private static final ChannelDAOImpl channelDAO = new ChannelDAOImpl();
 
     private static final CachedData cachedData = new CachedData();
 
@@ -162,6 +165,50 @@ public class DiscordService {
 
         messageDAO.closeSession();
 
+    }
+
+    public static void processChannelCreated(long server_snowflake, String channelName, long channelSnowflake) {
+
+        serverDAO.openSession();
+
+        Server server = (Server) serverDAO.findById(server_snowflake);
+
+        if (server != null) {
+            Channel entityChannel = new Channel(channelSnowflake, channelName);
+            server.addChannel(entityChannel);
+            entityChannel.setServer(server);
+            serverDAO.merge(server);
+        }
+
+        serverDAO.closeSession();
+
+    }
+
+    public static void processChannelDeleted(long snowflake) {
+
+        channelDAO.openSession();
+
+        Channel channelEntity = (Channel) channelDAO.findById(snowflake);
+        if (channelEntity != null) {
+            channelDAO.delete(channelEntity);
+        }
+
+        channelDAO.closeSession();
+    }
+
+    public static void processChannelEdited(long snowflake, String newName) {
+
+        channelDAO.openSession();
+
+        Channel channelEntity = (Channel) channelDAO.findById(snowflake);
+        if (channelEntity != null) {
+            if (!channelEntity.getName().equals(newName)) {
+                channelEntity.setName(newName);
+                channelDAO.update(channelEntity);
+            }
+        }
+
+        channelDAO.closeSession();
     }
 
     private static void analysisChannelMessages(TextChannel tc, Server server) {
