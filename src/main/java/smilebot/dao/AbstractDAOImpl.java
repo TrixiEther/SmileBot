@@ -28,26 +28,31 @@ public abstract class AbstractDAOImpl<T> implements AbstractDAO<T> {
             }
     }
 
+    @Override
     public T findById(long id) {
         return session.get(genericType, id);
     }
 
-    public void save(T entity) {
+    @Override
+    public void save(Object entity) {
         Transaction trx = session.beginTransaction();
         session.save(entity);
         trx.commit();
     }
-    public void update(T entity) {
+    @Override
+    public void update(Object entity) {
         Transaction trx = session.beginTransaction();
         session.update(entity);
         trx.commit();
     }
-    public void delete(T entity) {
+    @Override
+    public void delete(Object entity) {
         Transaction trx = session.beginTransaction();
         session.delete(entity);
         trx.commit();
     }
-    public void merge(T entity) {
+    @Override
+    public void merge(Object entity) {
         Transaction trx = session.beginTransaction();
         session.merge(entity);
         trx.commit();

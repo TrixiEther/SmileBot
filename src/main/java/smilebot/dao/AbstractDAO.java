@@ -4,8 +4,9 @@ public interface AbstractDAO<T> {
 
     T findById(long id);
 
-    void save(T server);
-    void update(T server);
-    void delete(T server);
+    void save(Object entity);
+    void update(Object entity);
+    void delete(Object entity);
+    void merge(Object entity);
 
 }
