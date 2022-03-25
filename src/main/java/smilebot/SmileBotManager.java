@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import smilebot.configuration.BotConfigurationProperties;
 import smilebot.monitored.ChannelListener;
 import smilebot.monitored.MessageListener;
+import smilebot.monitored.ReactionListener;
 import smilebot.utils.DiscordEventsPool;
 
 import javax.security.auth.login.LoginException;
@@ -30,6 +31,7 @@ public class SmileBotManager {
                 .build();
         jda.addEventListener(new MessageListener());
         jda.addEventListener(new ChannelListener());
+        jda.addEventListener(new ReactionListener());
 
         System.out.println("Start pool");
         DiscordEventsPool.getInstance().start();
