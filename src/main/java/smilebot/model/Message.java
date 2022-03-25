@@ -94,4 +94,21 @@ public class Message extends AbstractDiscordEntity {
         this.reactions.clear();
     }
 
+    public void removeReactionByUserAndEmoji(long user_sn, long emoji_sn) {
+
+        Reaction reactionToRemove = null;
+
+        for (Reaction r : reactions) {
+            if (r.getUser().getSnowflake() == user_sn && r.getEmoji().getSnowflake() == emoji_sn) {
+                reactionToRemove = r;
+                break;
+            }
+        }
+
+        if (reactionToRemove != null) {
+            reactions.remove(reactionToRemove);
+        }
+
+    }
+
 }

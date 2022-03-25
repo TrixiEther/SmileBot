@@ -6,7 +6,9 @@ import net.dv8tion.jda.api.events.channel.text.update.TextChannelUpdateNameEvent
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
-import smilebot.utils.DiscordEventsPool;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionRemoveAllEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionRemoveEvent;
 
 public class DiscordEventFactory {
 
@@ -49,6 +51,36 @@ public class DiscordEventFactory {
         return new ChannelEditedEvent(
                 e.getChannel().getIdLong(),
                 e.getNewName()
+        );
+    }
+
+    public static IDiscordEvent processReactionAddedEvent(MessageReactionAddEvent e) {
+        return new ReactionAddedEvent(
+                e.getGuild().getIdLong(),
+                e.getChannel().getIdLong(),
+                e.getMessageIdLong(),
+                e.getUserIdLong(),
+                e.getReactionEmote().getIdLong()
+        );
+    }
+
+    public static IDiscordEvent processReactionRemovedEvent(MessageReactionRemoveEvent e) {
+        return new ReactionRemovedEvent(
+                e.getGuild().getIdLong(),
+                e.getChannel().getIdLong(),
+                e.getMessageIdLong(),
+                e.getUserIdLong(),
+                e.getReactionEmote().getIdLong()
+        );
+    }
+
+    public static IDiscordEvent processReactionRemovedAllEvent(MessageReactionRemoveAllEvent e) {
+        return new ReactionRemovedAllEvent(
+                e.getGuild().getIdLong(),
+                e.getChannel().getIdLong(),
+                e.getMessageIdLong(),
+                0,
+                0
         );
     }
 

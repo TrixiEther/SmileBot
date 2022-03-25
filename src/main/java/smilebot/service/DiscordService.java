@@ -2,9 +2,7 @@ package smilebot.service;
 
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message;
-import smilebot.dao.ChannelDAOImpl;
-import smilebot.dao.MessageDAOImpl;
-import smilebot.dao.ServerDAOImpl;
+import smilebot.dao.*;
 import smilebot.events.ChannelCreatedEvent;
 import smilebot.helpers.EmojiCount;
 import smilebot.helpers.MessageAnalysisHelper;
@@ -25,6 +23,8 @@ public class DiscordService {
     private static final ServerDAOImpl serverDAO = new ServerDAOImpl();
     private static final MessageDAOImpl messageDAO = new MessageDAOImpl();
     private static final ChannelDAOImpl channelDAO = new ChannelDAOImpl();
+    private static final UserDAOImpl userDAO = new UserDAOImpl();
+    private static final EmojiDAOImpl emojiDAO = new EmojiDAOImpl();
 
     private static final CachedData cachedData = new CachedData();
 
@@ -209,6 +209,108 @@ public class DiscordService {
         }
 
         channelDAO.closeSession();
+    }
+
+    public static void processMessageReactionAdded(long server_sn, long channel_sn, long message_sn, long user_sn, long emoji_sn) {
+
+        messageDAO.openSession();
+
+        smilebot.model.Message entityMessage = (smilebot.model.Message)messageDAO.findById(message_sn);
+        CachedServer cachedServer = getCachedServer(server_sn);
+
+        boolean isMessageCreated = false;
+
+        if (cachedServer != null) {
+
+            userDAO.openSession();
+            User entityUser = (User)userDAO.findById(user_sn);
+
+            emojiDAO.openSession();
+            Emoji entityEmoji = (Emoji)emojiDAO.findById(emoji_sn);
+
+            if (entityMessage == null) {
+
+                System.out.println("Message not found, so create record...");
+
+                channelDAO.openSession();
+                Channel entityChannel = (Channel)channelDAO.findById(channel_sn);
+
+                entityMessage = new smilebot.model.Message(
+                        message_sn,
+                        entityUser,
+                        entityChannel
+                );
+
+                channelDAO.closeSession();
+
+                isMessageCreated = true;
+
+            }
+
+            if (entityUser != null && entityEmoji != null) {
+
+                Reaction entityReaction = new Reaction(
+                        entityMessage,
+                        entityUser,
+                        entityEmoji
+                );
+
+                entityMessage.addReaction(entityReaction);
+
+            }
+
+            if (isMessageCreated)
+                messageDAO.save(entityMessage);
+            else
+                messageDAO.merge(entityMessage);
+
+            userDAO.closeSession();
+            emojiDAO.closeSession();
+        }
+
+        messageDAO.closeSession();
+
+    }
+
+    public static void processMessageReactionRemoved(long server_sn, long message_sn, long user_sn, long emoji_sn) {
+
+        messageDAO.openSession();
+
+        smilebot.model.Message entityMessage = (smilebot.model.Message)messageDAO.findById(message_sn);
+        CachedServer cachedServer = getCachedServer(server_sn);
+
+        if (cachedServer != null && entityMessage != null) {
+            entityMessage.removeReactionByUserAndEmoji(user_sn, emoji_sn);
+
+            if (entityMessage.getEmojiInMessageResults().size() == 0 && entityMessage.getReactions().size() == 0) {
+                messageDAO.delete(entityMessage);
+            } else {
+                messageDAO.merge(entityMessage);
+            }
+        }
+
+        messageDAO.closeSession();
+    }
+
+    public static void processMessageReactionRemovedAll(long server_sn, long message_sn) {
+
+        messageDAO.openSession();
+
+        smilebot.model.Message entityMessage = (smilebot.model.Message)messageDAO.findById(message_sn);
+        CachedServer cachedServer = getCachedServer(server_sn);
+
+        if (cachedServer != null && entityMessage != null) {
+            entityMessage.removeAllReactions();
+
+            if (entityMessage.getEmojiInMessageResults().size() == 0 && entityMessage.getReactions().size() == 0) {
+                messageDAO.delete(entityMessage);
+            } else {
+                messageDAO.merge(entityMessage);
+            }
+        }
+
+        messageDAO.closeSession();
+
     }
 
     private static void analysisChannelMessages(TextChannel tc, Server server) {

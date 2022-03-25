@@ -2,6 +2,6 @@ package smilebot.events;
 
 public interface IDiscordEvent {
 
-    public void process();
+    void process();
 
 }
