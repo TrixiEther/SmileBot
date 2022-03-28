@@ -3,18 +3,17 @@ package smilebot.service;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message;
 import smilebot.dao.*;
-import smilebot.events.ChannelCreatedEvent;
 import smilebot.helpers.EmojiCount;
 import smilebot.helpers.MessageAnalysisHelper;
 import smilebot.helpers.MessageAnalysisResult;
 import smilebot.helpers.UserReaction;
 import smilebot.model.*;
+import smilebot.model.Channel;
 import smilebot.model.Emoji;
 import smilebot.model.User;
 import smilebot.utils.CachedData;
 import smilebot.utils.CachedServer;
 
-import javax.swing.text.html.parser.Entity;
 import java.util.ArrayList;
 import java.util.List;
 
