@@ -21,12 +21,16 @@ public class Channel extends AbstractDiscordEntity implements IChannel {
     @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Message> messages;
 
+    @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DiscordThread> threads;
+
     public Channel() {}
 
     public Channel(long snowflake, String name) {
         this.snowflake = snowflake;
         this.name = name;
         messages = new ArrayList<>();
+        threads = new ArrayList<>();
     }
 
     @Override
@@ -51,8 +55,16 @@ public class Channel extends AbstractDiscordEntity implements IChannel {
         this.messages.add(message);
     }
 
+    public void addThread(DiscordThread thread) {
+        this.threads.add(thread);
+    }
+
     public List<Message> getMessages() {
         return messages;
+    }
+
+    public List<DiscordThread> getThreads() {
+        return threads;
     }
 
     public void setMessages(List<Message> messages) {

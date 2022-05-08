@@ -42,6 +42,18 @@ public class DiscordService {
             channel.setServer(server);
             server.addChannel(channel);
             System.out.println("gc.snowflake=" + Long.parseLong(tc.getId()) + "gc.name=" + tc.getName());
+
+            for (ThreadChannel thc : tc.getThreadChannels()) {
+                DiscordThread thread = new DiscordThread(
+                        Long.parseLong(thc.getId()),
+                        thc.getName(),
+                        thc.isArchived()
+                );
+                thread.setChannel(channel);
+                channel.addThread(thread);
+                System.out.println("gthc.snowflake=" + Long.parseLong(thc.getId()) + "gthc.name=" + thc.getName());
+            }
+
         }
         for (Emote e : guild.getEmotes()) {
             Emoji emoji = new Emoji(Long.parseLong(e.getId()), e.getName());
@@ -58,6 +70,9 @@ public class DiscordService {
         System.out.println("Starting message analysis...");
         for (TextChannel tc : guild.getTextChannels()) {
             analysisChannelMessages(tc, server);
+            for (ThreadChannel tch : tc.getThreadChannels()) {
+                analysisChannelMessages(tch, server);
+            }
         }
 
         System.out.println("Ready to save");
@@ -145,7 +160,8 @@ public class DiscordService {
                 entityMessage = new smilebot.model.Message(
                         message.getIdLong(),
                         new User(message.getAuthor().getIdLong(), message.getAuthor().getName()),
-                        new Channel(message.getChannel().getIdLong(), message.getChannel().getName())
+                        new Channel(message.getChannel().getIdLong(), message.getChannel().getName()),
+                        null
                 );
 
                 MessageAnalysisHelper mah = new MessageAnalysisHelper(cachedServer.getEmojis());
@@ -237,7 +253,8 @@ public class DiscordService {
                 entityMessage = new smilebot.model.Message(
                         message_sn,
                         entityUser,
-                        entityChannel
+                        entityChannel,
+                        null
                 );
 
                 channelDAO.closeSession();
@@ -312,9 +329,14 @@ public class DiscordService {
 
     }
 
-    private static void analysisChannelMessages(TextChannel tc, Server server) {
+    private static void analysisChannelMessages(GuildMessageChannel ch, Server server) {
 
-        System.out.println("Channel = " + tc.getName());
+        if (ch instanceof TextChannel)
+            System.out.println("Channel = " + ch.getName());
+        else if (ch instanceof ThreadChannel)
+            System.out.println("Thread = " + ch.getName());
+        else
+            System.out.println("Unknown type...");
 
         MessageAnalysisHelper mah = new MessageAnalysisHelper(server.getEmojis());
 
@@ -325,7 +347,7 @@ public class DiscordService {
             boolean lastMessageProcessed = false;
 
             try {
-                lastId = tc.getLatestMessageId();
+                lastId = ch.getLatestMessageId();
             } catch (IllegalStateException e) {
                 System.out.println("Perhaps when the channel is empty, there is nothing to do...");
                 return;
@@ -334,10 +356,10 @@ public class DiscordService {
             for (int i = 0;;i++) {
 
                 System.out.println("Starting analyze i = " + i);
-                tempMessages.addAll(tc.getHistoryBefore(lastId, 100).complete().getRetrievedHistory());
+                tempMessages.addAll(ch.getHistoryBefore(lastId, 100).complete().getRetrievedHistory());
 
                 if (!lastMessageProcessed) {
-                    Message lastMessage = tc.retrieveMessageById(lastId).complete();
+                    Message lastMessage = ch.retrieveMessageById(lastId).complete();
                     lastMessageProcessed = true;
                     analyzeContentOnInit(lastMessage, server, mah);
                 }
@@ -404,7 +426,8 @@ public class DiscordService {
                 entityMessage = new smilebot.model.Message(
                         m.getIdLong(),
                         new User(user.getSnowflake(), user.getName()),
-                        new Channel(channel.getSnowflake(), channel.getName())
+                        new Channel(channel.getSnowflake(), channel.getName()),
+                        null
                 );
 
             } else {
@@ -461,13 +484,16 @@ public class DiscordService {
 
             User entityUser = server.findUserBySnowflake(m.getAuthor().getIdLong());
             Channel entityChannel = server.findChannelBySnowflake(m.getChannel().getIdLong());
+            DiscordThread entityThread = server.findThreadBySnowflake(m.getChannel().getIdLong());
 
             if (entityUser != null && entityChannel != null) {
 
                 smilebot.model.Message message = new smilebot.model.Message(
                         m.getIdLong(),
                         entityUser,
-                        entityChannel
+                        m.isFromType(ChannelType.TEXT) ? entityChannel : null,
+                        m.isFromType(ChannelType.GUILD_PUBLIC_THREAD)
+                                || m.isFromType(ChannelType.GUILD_PRIVATE_THREAD) ? null : entityThread
                 );
 
                 for (EmojiCount ec : mar.getResults()) {

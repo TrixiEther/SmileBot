@@ -17,6 +17,7 @@ public class HibernateSessionFactoryUtil {
                 Configuration configuration = new Configuration().configure();
                 configuration.addAnnotatedClass(Server.class);
                 configuration.addAnnotatedClass(Channel.class);
+                configuration.addAnnotatedClass(DiscordThread.class);
                 configuration.addAnnotatedClass(Emoji.class);
                 configuration.addAnnotatedClass(User.class);
                 configuration.addAnnotatedClass(Message.class);
