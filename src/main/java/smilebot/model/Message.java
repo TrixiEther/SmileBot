@@ -1,6 +1,7 @@
 package smilebot.model;
 
 import jdk.nashorn.internal.objects.annotations.Getter;
+import net.dv8tion.jda.api.entities.ThreadChannel;
 import org.hibernate.annotations.Cascade;
 
 import javax.persistence.*;
@@ -12,11 +13,11 @@ import java.util.List;
 @AttributeOverride(name = "snowflake", column = @Column(name = "m_snowflake"))
 public class Message extends AbstractDiscordEntity {
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "channel_sn")
     private Channel channel;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "thread_sn")
     private DiscordThread thread;
 
@@ -42,11 +43,11 @@ public class Message extends AbstractDiscordEntity {
 
     public Message() {}
 
-    public Message(long snowflake, User user, Channel channel, DiscordThread thread) {
+    public Message(long snowflake, User user, IMessageContainer channel, IMessageContainer thread) {
         this.snowflake = snowflake;
         this.user = user;
-        this.channel = channel;
-        this.thread = thread;
+        this.channel = (Channel) channel;
+        this.thread = (DiscordThread) thread;
         emojiInMessageResults = new ArrayList<>();
         reactions = new ArrayList<>();
     }

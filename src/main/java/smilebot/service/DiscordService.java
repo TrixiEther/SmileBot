@@ -486,14 +486,13 @@ public class DiscordService {
             Channel entityChannel = server.findChannelBySnowflake(m.getChannel().getIdLong());
             DiscordThread entityThread = server.findThreadBySnowflake(m.getChannel().getIdLong());
 
-            if (entityUser != null && entityChannel != null) {
+            if (entityUser != null && (entityChannel != null || entityThread != null)) {
 
                 smilebot.model.Message message = new smilebot.model.Message(
                         m.getIdLong(),
                         entityUser,
-                        m.isFromType(ChannelType.TEXT) ? entityChannel : null,
-                        m.isFromType(ChannelType.GUILD_PUBLIC_THREAD)
-                                || m.isFromType(ChannelType.GUILD_PRIVATE_THREAD) ? null : entityThread
+                        entityChannel,
+                        entityThread
                 );
 
                 for (EmojiCount ec : mar.getResults()) {
@@ -507,8 +506,15 @@ public class DiscordService {
                         entityEmoji.addEmojiInMessageResult(eimr);
                         message.addEmojiInMessageResult(eimr);
 
-                        if (!entityChannel.isContainMessage(message))
-                            entityChannel.addMessage(message);
+                        if (entityChannel != null) {
+                            if (!entityChannel.isContainMessage(message))
+                                entityChannel.addMessage(message);
+                        }
+
+                        if (entityThread != null) {
+                            if (!entityThread.isContainMessage(message))
+                                entityThread.addMessage(message);
+                        }
 
                         if (!entityUser.isContainMessage(message))
                             entityUser.addMessage(message);
@@ -531,9 +537,15 @@ public class DiscordService {
                     //  Messages to which users reacted must also be associated with the channel,
                     //  and also with the user who left the reaction
                     //
+                    if (entityChannel != null) {
+                        if (!entityChannel.isContainMessage(message))
+                            entityChannel.addMessage(message);
+                    }
 
-                    if (!entityChannel.isContainMessage(message))
-                        entityChannel.addMessage(message);
+                    if (entityThread != null) {
+                        if (!entityThread.isContainMessage(message))
+                            entityThread.addMessage(message);
+                    }
 
                     if (!reactUser.isContainMessage(message))
                         reactUser.addMessage(message);
@@ -545,5 +557,4 @@ public class DiscordService {
         }
 
     }
-
 }

@@ -10,7 +10,7 @@ import java.util.List;
 @Entity
 @Table (name = "channels")
 @AttributeOverride(name = "snowflake", column = @Column(name = "c_snowflake"))
-public class Channel extends AbstractDiscordEntity implements IChannel {
+public class Channel extends AbstractDiscordEntity implements IChannel, IMessageContainer {
 
     private String name;
 
@@ -51,6 +51,7 @@ public class Channel extends AbstractDiscordEntity implements IChannel {
         this.server = server;
     }
 
+    @Override
     public void addMessage(Message message) {
         this.messages.add(message);
     }
@@ -71,6 +72,7 @@ public class Channel extends AbstractDiscordEntity implements IChannel {
         this.messages = messages;
     }
 
+    @Override
     public boolean isContainMessage(Message message) {
         return this.messages.contains(message);
     }
