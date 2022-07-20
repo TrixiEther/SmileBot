@@ -104,6 +104,30 @@ public class Server extends AbstractDiscordEntity implements IServer {
         return null;
     }
 
+    @Override
+    public DiscordThread findThreadBySnowflake(long snowflake) {
+        for (Channel c : channels) {
+            for (DiscordThread t : c.getThreads()) {
+                if (t.getSnowflake() == snowflake)
+                    return t;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public IMessageContainer findMessageContainerBySnowflake(long snowflake) {
+        for (Channel c : channels) {
+            if (c.getSnowflake() == snowflake)
+                return c;
+            for (DiscordThread t : c.getThreads()) {
+                if (t.getSnowflake() == snowflake)
+                    return t;
+            }
+        }
+        return null;
+    }
+
     public List<Emoji> getEmojis() {
         return emojis;
     }
