@@ -3,20 +3,21 @@ package smilebot.service;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message;
 import smilebot.dao.*;
-import smilebot.events.ChannelCreatedEvent;
 import smilebot.helpers.EmojiCount;
 import smilebot.helpers.MessageAnalysisHelper;
 import smilebot.helpers.MessageAnalysisResult;
 import smilebot.helpers.UserReaction;
 import smilebot.model.*;
+import smilebot.model.Channel;
 import smilebot.model.Emoji;
 import smilebot.model.User;
 import smilebot.utils.CachedData;
 import smilebot.utils.CachedServer;
 
-import javax.swing.text.html.parser.Entity;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class DiscordService {
 
@@ -43,6 +44,22 @@ public class DiscordService {
             channel.setServer(server);
             server.addChannel(channel);
             System.out.println("gc.snowflake=" + Long.parseLong(tc.getId()) + "gc.name=" + tc.getName());
+
+            Set<ThreadChannel> threadChannelList = new HashSet<>();
+            threadChannelList.addAll(tc.getThreadChannels());
+            threadChannelList.addAll(tc.retrieveArchivedPublicThreadChannels().complete());
+
+            for (ThreadChannel thc : threadChannelList) {
+                DiscordThread thread = new DiscordThread(
+                        Long.parseLong(thc.getId()),
+                        thc.getName(),
+                        thc.isArchived()
+                );
+                thread.setChannel(channel);
+                channel.addThread(thread);
+                System.out.println("gthc.snowflake=" + Long.parseLong(thc.getId()) + "gthc.name=" + thc.getName());
+            }
+
         }
         for (Emote e : guild.getEmotes()) {
             Emoji emoji = new Emoji(Long.parseLong(e.getId()), e.getName());
@@ -59,6 +76,13 @@ public class DiscordService {
         System.out.println("Starting message analysis...");
         for (TextChannel tc : guild.getTextChannels()) {
             analysisChannelMessages(tc, server);
+
+            Set<ThreadChannel> threadChannelList = new HashSet<>();
+            threadChannelList.addAll(tc.getThreadChannels());
+            threadChannelList.addAll(tc.retrieveArchivedPublicThreadChannels().complete());
+            for (ThreadChannel tch : threadChannelList) {
+                analysisChannelMessages(tch, server);
+            }
         }
 
         System.out.println("Ready to save");
@@ -146,7 +170,8 @@ public class DiscordService {
                 entityMessage = new smilebot.model.Message(
                         message.getIdLong(),
                         new User(message.getAuthor().getIdLong(), message.getAuthor().getName()),
-                        new Channel(message.getChannel().getIdLong(), message.getChannel().getName())
+                        new Channel(message.getChannel().getIdLong(), message.getChannel().getName()),
+                        null
                 );
 
                 MessageAnalysisHelper mah = new MessageAnalysisHelper(cachedServer.getEmojis());
@@ -238,7 +263,8 @@ public class DiscordService {
                 entityMessage = new smilebot.model.Message(
                         message_sn,
                         entityUser,
-                        entityChannel
+                        entityChannel,
+                        null
                 );
 
                 channelDAO.closeSession();
@@ -313,9 +339,14 @@ public class DiscordService {
 
     }
 
-    private static void analysisChannelMessages(TextChannel tc, Server server) {
+    private static void analysisChannelMessages(GuildMessageChannel ch, Server server) {
 
-        System.out.println("Channel = " + tc.getName());
+        if (ch instanceof TextChannel)
+            System.out.println("Channel = " + ch.getName());
+        else if (ch instanceof ThreadChannel)
+            System.out.println("Thread = " + ch.getName());
+        else
+            System.out.println("Unknown type...");
 
         MessageAnalysisHelper mah = new MessageAnalysisHelper(server.getEmojis());
 
@@ -326,7 +357,7 @@ public class DiscordService {
             boolean lastMessageProcessed = false;
 
             try {
-                lastId = tc.getLatestMessageId();
+                lastId = ch.getLatestMessageId();
             } catch (IllegalStateException e) {
                 System.out.println("Perhaps when the channel is empty, there is nothing to do...");
                 return;
@@ -335,10 +366,10 @@ public class DiscordService {
             for (int i = 0;;i++) {
 
                 System.out.println("Starting analyze i = " + i);
-                tempMessages.addAll(tc.getHistoryBefore(lastId, 100).complete().getRetrievedHistory());
+                tempMessages.addAll(ch.getHistoryBefore(lastId, 100).complete().getRetrievedHistory());
 
                 if (!lastMessageProcessed) {
-                    Message lastMessage = tc.retrieveMessageById(lastId).complete();
+                    Message lastMessage = ch.retrieveMessageById(lastId).complete();
                     lastMessageProcessed = true;
                     analyzeContentOnInit(lastMessage, server, mah);
                 }
@@ -405,7 +436,8 @@ public class DiscordService {
                 entityMessage = new smilebot.model.Message(
                         m.getIdLong(),
                         new User(user.getSnowflake(), user.getName()),
-                        new Channel(channel.getSnowflake(), channel.getName())
+                        new Channel(channel.getSnowflake(), channel.getName()),
+                        null
                 );
 
             } else {
@@ -462,13 +494,15 @@ public class DiscordService {
 
             User entityUser = server.findUserBySnowflake(m.getAuthor().getIdLong());
             Channel entityChannel = server.findChannelBySnowflake(m.getChannel().getIdLong());
+            DiscordThread entityThread = server.findThreadBySnowflake(m.getChannel().getIdLong());
 
-            if (entityUser != null && entityChannel != null) {
+            if (entityUser != null && (entityChannel != null || entityThread != null)) {
 
                 smilebot.model.Message message = new smilebot.model.Message(
                         m.getIdLong(),
                         entityUser,
-                        entityChannel
+                        entityChannel,
+                        entityThread
                 );
 
                 for (EmojiCount ec : mar.getResults()) {
@@ -482,8 +516,15 @@ public class DiscordService {
                         entityEmoji.addEmojiInMessageResult(eimr);
                         message.addEmojiInMessageResult(eimr);
 
-                        if (!entityChannel.isContainMessage(message))
-                            entityChannel.addMessage(message);
+                        if (entityChannel != null) {
+                            if (!entityChannel.isContainMessage(message))
+                                entityChannel.addMessage(message);
+                        }
+
+                        if (entityThread != null) {
+                            if (!entityThread.isContainMessage(message))
+                                entityThread.addMessage(message);
+                        }
 
                         if (!entityUser.isContainMessage(message))
                             entityUser.addMessage(message);
@@ -506,9 +547,15 @@ public class DiscordService {
                     //  Messages to which users reacted must also be associated with the channel,
                     //  and also with the user who left the reaction
                     //
+                    if (entityChannel != null) {
+                        if (!entityChannel.isContainMessage(message))
+                            entityChannel.addMessage(message);
+                    }
 
-                    if (!entityChannel.isContainMessage(message))
-                        entityChannel.addMessage(message);
+                    if (entityThread != null) {
+                        if (!entityThread.isContainMessage(message))
+                            entityThread.addMessage(message);
+                    }
 
                     if (!reactUser.isContainMessage(message))
                         reactUser.addMessage(message);
@@ -520,5 +567,4 @@ public class DiscordService {
         }
 
     }
-
 }

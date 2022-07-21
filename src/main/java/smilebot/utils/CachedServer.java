@@ -1,9 +1,6 @@
 package smilebot.utils;
 
-import smilebot.model.IChannel;
-import smilebot.model.IEmoji;
-import smilebot.model.IServer;
-import smilebot.model.IUser;
+import smilebot.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -105,6 +102,16 @@ public class CachedServer extends AbstractCachedObject implements IServer {
                 return cachedChannel.getSnowflake() == snowflake;
             }
         });
+    }
+
+    @Override
+    public IDiscordThread findThreadBySnowflake(long snowflake) {
+        return null;
+    }
+
+    @Override
+    public IMessageContainer findMessageContainerBySnowflake(long snowflake) {
+        return null;
     }
 
     public CachedChannel findChannelByName(String name) {

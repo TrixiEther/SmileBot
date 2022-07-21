@@ -1,8 +1,8 @@
 package smilebot.events;
 
-import net.dv8tion.jda.api.events.channel.text.TextChannelCreateEvent;
-import net.dv8tion.jda.api.events.channel.text.TextChannelDeleteEvent;
-import net.dv8tion.jda.api.events.channel.text.update.TextChannelUpdateNameEvent;
+import net.dv8tion.jda.api.events.channel.ChannelCreateEvent;
+import net.dv8tion.jda.api.events.channel.ChannelDeleteEvent;
+import net.dv8tion.jda.api.events.channel.update.ChannelUpdateNameEvent;
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
@@ -32,7 +32,7 @@ public class DiscordEventFactory {
         return new UpdateMessageEvent(e.getMessageIdLong(), e.getMessage());
     }
 
-    public static IDiscordEvent processChannelCreatedEvent(TextChannelCreateEvent e) {
+    public static IDiscordEvent processChannelCreatedEvent(ChannelCreateEvent e) {
         return new ChannelCreatedEvent(
                 e.getChannel().getIdLong(),
                 e.getChannel().getName(),
@@ -40,17 +40,17 @@ public class DiscordEventFactory {
         );
     }
 
-    public static IDiscordEvent processChannelDeleteEvent(TextChannelDeleteEvent e) {
+    public static IDiscordEvent processChannelDeleteEvent(ChannelDeleteEvent e) {
         return new ChannelDeletedEvent(
                 e.getChannel().getIdLong(),
                 e.getChannel().getName()
         );
     }
 
-    public static IDiscordEvent processChannelUpdatedEvent(TextChannelUpdateNameEvent e) {
+    public static IDiscordEvent processChannelUpdatedEvent(ChannelUpdateNameEvent e) {
         return new ChannelEditedEvent(
                 e.getChannel().getIdLong(),
-                e.getNewName()
+                e.getNewValue()
         );
     }
 

@@ -41,18 +41,20 @@ public class MessageAnalysisHelper {
 
             for (MessageReaction mr : message.getReactions()) {
 
-                long emojiSnowflake = mr.getReactionEmote().getEmote().getIdLong();
-
-                // Count only reactions with the custom emoji
-                if (emojiSnowflake == e.getSnowflake()) {
-                    for (User u : mr.retrieveUsers().complete()) {
-                        mar.addReaction(new UserReaction(
-                                emojiSnowflake,
-                                u.getIdLong()
-                        ));
+                MessageReaction.ReactionEmote re = mr.getReactionEmote();
+                // Need to check this, because default Discord emoji could throw exception here
+                if (re.isEmote()) {
+                    long emojiSnowflake = mr.getReactionEmote().getEmote().getIdLong();
+                    // Count only reactions with the custom emoji
+                    if (emojiSnowflake == e.getSnowflake()) {
+                        for (User u : mr.retrieveUsers().complete()) {
+                            mar.addReaction(new UserReaction(
+                                    emojiSnowflake,
+                                    u.getIdLong()
+                            ));
+                        }
                     }
                 }
-
             }
 
         }
