@@ -15,7 +15,9 @@ import smilebot.utils.CachedData;
 import smilebot.utils.CachedServer;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class DiscordService {
 
@@ -43,7 +45,11 @@ public class DiscordService {
             server.addChannel(channel);
             System.out.println("gc.snowflake=" + Long.parseLong(tc.getId()) + "gc.name=" + tc.getName());
 
-            for (ThreadChannel thc : tc.getThreadChannels()) {
+            Set<ThreadChannel> threadChannelList = new HashSet<>();
+            threadChannelList.addAll(tc.getThreadChannels());
+            threadChannelList.addAll(tc.retrieveArchivedPublicThreadChannels().complete());
+
+            for (ThreadChannel thc : threadChannelList) {
                 DiscordThread thread = new DiscordThread(
                         Long.parseLong(thc.getId()),
                         thc.getName(),
@@ -70,7 +76,11 @@ public class DiscordService {
         System.out.println("Starting message analysis...");
         for (TextChannel tc : guild.getTextChannels()) {
             analysisChannelMessages(tc, server);
-            for (ThreadChannel tch : tc.getThreadChannels()) {
+
+            Set<ThreadChannel> threadChannelList = new HashSet<>();
+            threadChannelList.addAll(tc.getThreadChannels());
+            threadChannelList.addAll(tc.retrieveArchivedPublicThreadChannels().complete());
+            for (ThreadChannel tch : threadChannelList) {
                 analysisChannelMessages(tch, server);
             }
         }
