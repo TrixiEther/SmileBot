@@ -3,6 +3,7 @@ package smilebot.service;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message;
 import smilebot.dao.*;
+import smilebot.exceptions.ServerNotFoundException;
 import smilebot.helpers.EmojiCount;
 import smilebot.helpers.MessageAnalysisHelper;
 import smilebot.helpers.MessageAnalysisResult;
@@ -102,7 +103,13 @@ public class DiscordService {
 
     public static void processNewMessage(Message message) {
 
-        CachedServer cachedServer = getCachedServer(message.getGuild().getIdLong());
+        CachedServer cachedServer = null;
+
+        try {
+            cachedServer = getCachedServer(message.getGuild().getIdLong());
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
 
         if (cachedServer != null) {
 
@@ -141,7 +148,14 @@ public class DiscordService {
 
         messageDAO.openSession();
         smilebot.model.Message entityMessage = (smilebot.model.Message) messageDAO.findById(snowflake);
-        CachedServer cachedServer = getCachedServer(message.getGuild().getIdLong());
+
+        CachedServer cachedServer = null;
+        try {
+            cachedServer = getCachedServer(message.getGuild().getIdLong());
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            messageDAO.closeSession();
+        }
 
         if (cachedServer != null) {
 
@@ -241,7 +255,14 @@ public class DiscordService {
         messageDAO.openSession();
 
         smilebot.model.Message entityMessage = (smilebot.model.Message)messageDAO.findById(message_sn);
-        CachedServer cachedServer = getCachedServer(server_sn);
+
+        CachedServer cachedServer = null;
+        try {
+            cachedServer = getCachedServer(server_sn);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            messageDAO.closeSession();
+        }
 
         boolean isMessageCreated = false;
 
@@ -303,7 +324,14 @@ public class DiscordService {
         messageDAO.openSession();
 
         smilebot.model.Message entityMessage = (smilebot.model.Message)messageDAO.findById(message_sn);
-        CachedServer cachedServer = getCachedServer(server_sn);
+
+        CachedServer cachedServer = null;
+        try {
+            cachedServer = getCachedServer(server_sn);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            messageDAO.closeSession();
+        }
 
         if (cachedServer != null && entityMessage != null) {
             entityMessage.removeReactionByUserAndEmoji(user_sn, emoji_sn);
@@ -323,7 +351,14 @@ public class DiscordService {
         messageDAO.openSession();
 
         smilebot.model.Message entityMessage = (smilebot.model.Message)messageDAO.findById(message_sn);
-        CachedServer cachedServer = getCachedServer(server_sn);
+
+        CachedServer cachedServer = null;
+        try {
+            cachedServer = getCachedServer(server_sn);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            messageDAO.closeSession();
+        }
 
         if (cachedServer != null && entityMessage != null) {
             entityMessage.removeAllReactions();
@@ -397,25 +432,35 @@ public class DiscordService {
 
     }
 
-    private static CachedServer getCachedServer(long snowflake) {
+    private static CachedServer getCachedServer(long snowflake) throws ServerNotFoundException {
+
+        if (cachedData.isUninitialized(snowflake)) {
+            System.out.println("Server uninitialized");
+            return null;
+        }
 
         CachedServer cachedServer = cachedData.getServerBySnowflake(snowflake);
 
-        if (cachedServer == null) {
-            System.out.println("Server " + snowflake
-                    + " not found in the cache, loading...");
-            serverDAO.openSession();
-            Server server = (Server) serverDAO.findById(snowflake);
-            cachedData.addServer(server.getSnowflake(),
-                    server.getName(),
-                    server.getEmojis(),
-                    server.getUsers(),
-                    server.getChannels()
-            );
-            serverDAO.closeSession();
+        try {
+            if (cachedServer == null) {
+                System.out.println("Server " + snowflake
+                        + " not found in the cache, loading...");
+                serverDAO.openSession();
+                Server server = (Server) serverDAO.findById(snowflake);
+                cachedData.addServer(server.getSnowflake(),
+                        server.getName(),
+                        server.getEmojis(),
+                        server.getUsers(),
+                        server.getChannels()
+                );
+                serverDAO.closeSession();
 
-            cachedServer = cachedData.getServerBySnowflake(snowflake);
+                cachedServer = cachedData.getServerBySnowflake(snowflake);
 
+            }
+        } catch (NullPointerException e) {
+            cachedData.setUninitializedServer(snowflake);
+            throw new ServerNotFoundException();
         }
 
         return cachedServer;

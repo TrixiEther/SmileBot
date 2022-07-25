@@ -6,19 +6,24 @@ import smilebot.model.ISnowflake;
 import smilebot.model.IUser;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 public class CachedData {
 
+    private Set<Long> uninitializedServers;
     private List<CachedServer> cachedServers;
 
     public CachedData() {
         cachedServers = new ArrayList<>();
+        uninitializedServers = new HashSet<>();
     }
 
     public void addServer(long snowflake, String name, List<? extends IEmoji> emojis, List<? extends IUser> users, List<? extends IChannel> channels) {
         cachedServers.add(new CachedServer(snowflake, name, emojis, users, channels));
+        uninitializedServers.remove(snowflake);
     }
 
     public void removeServer(long snowflake) {
@@ -41,6 +46,19 @@ public class CachedData {
                 return cachedServer.getName().equals(name);
             }
         });
+    }
+
+    public void setUninitializedServer(long snowflake) {
+        uninitializedServers.add(snowflake);
+    }
+
+    public boolean isUninitialized(long snowflake) {
+        for (long sn : uninitializedServers) {
+            if (sn == snowflake) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private CachedServer findServer(Predicate<CachedServer> predicate) {
