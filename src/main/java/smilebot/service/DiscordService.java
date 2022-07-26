@@ -2,6 +2,7 @@ package smilebot.service;
 
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji;
 import smilebot.dao.*;
 import smilebot.exceptions.ServerNotFoundException;
 import smilebot.helpers.EmojiCount;
@@ -62,7 +63,7 @@ public class DiscordService {
             }
 
         }
-        for (Emote e : guild.getEmotes()) {
+        for (RichCustomEmoji e : guild.getEmojiCache().asList()) {
             Emoji emoji = new Emoji(Long.parseLong(e.getId()), e.getName());
             emoji.setServer(server);
             server.addEmoji(emoji);
@@ -73,6 +74,11 @@ public class DiscordService {
             user.addServer(server);
             server.addUser(user);
         }
+
+        System.out.println("Ready to save server + " + server.getName() + " + structure...");
+        serverDAO.openSession();
+        serverDAO.save(server);
+        serverDAO.closeSession();
 
         System.out.println("Starting message analysis...");
         for (TextChannel tc : guild.getTextChannels()) {
@@ -86,18 +92,11 @@ public class DiscordService {
             }
         }
 
-        System.out.println("Ready to save");
+        System.out.println("Ready to save messages");
         serverDAO.openSession();
-        serverDAO.save(server);
+        serverDAO.merge(server);
         serverDAO.closeSession();
         System.out.println("Server saved!");
-
-        cachedData.addServer(server.getSnowflake(),
-                server.getName(),
-                server.getEmojis(),
-                server.getUsers(),
-                server.getChannels()
-        );
 
     }
 
@@ -374,6 +373,22 @@ public class DiscordService {
 
     }
 
+    public static void processThreadCreated(long snowflake, long channel_snowflake, String name) {
+
+        channelDAO.openSession();
+
+        Channel channel = (Channel) channelDAO.findById(channel_snowflake);
+
+        if (channel != null) {
+            DiscordThread entityThread = new DiscordThread(snowflake, name, false);
+            channel.addThread(entityThread);
+            entityThread.setChannel(channel);
+            channelDAO.merge(channel);
+        }
+
+        channelDAO.closeSession();
+    }
+
     private static void analysisChannelMessages(GuildMessageChannel ch, Server server) {
 
         if (ch instanceof TextChannel)
@@ -406,12 +421,12 @@ public class DiscordService {
                 if (!lastMessageProcessed) {
                     Message lastMessage = ch.retrieveMessageById(lastId).complete();
                     lastMessageProcessed = true;
-                    analyzeContentOnInit(lastMessage, server, mah);
+                    analyzeContent(lastMessage, server, mah, null);
                 }
 
                 if (tempMessages.size() > 0) {
                     for (Message m : tempMessages) {
-                        analyzeContentOnInit(m, server, mah);
+                        analyzeContent(m, server, mah, null);
                         count++;
                     }
 
@@ -466,28 +481,58 @@ public class DiscordService {
         return cachedServer;
     }
 
-    private static smilebot.model.Message analyzeContent(Message m, CachedServer server, MessageAnalysisHelper mah, smilebot.model.Message editableMessage) {
+    private static smilebot.model.Message analyzeContent(Message m, IServer server, MessageAnalysisHelper mah, smilebot.model.Message editableMessage) {
+
+        boolean isPublicThreadPost = (m.getChannel().getType() == ChannelType.GUILD_PUBLIC_THREAD);
+
+        //
+        // If the user and channel is in the server list,
+        // then we will process the message and add it to the statistics
+        // If not, then (for now) ignore
+        //
 
         IUser user = server.findUserBySnowflake(m.getAuthor().getIdLong());
-        IChannel channel = server.findChannelBySnowflake(m.getChannel().getIdLong());
+        IChannel channel = null;
+        IDiscordThread thread = null;
+
+        if (!isPublicThreadPost) {
+            channel = server.findChannelBySnowflake(m.getChannel().getIdLong());
+        } else {
+            channel = server.findChannelBySnowflake(m.getChannel().asThreadChannel().getParentChannel().getIdLong());
+            thread = server.findThreadBySnowflake(m.getChannel().getIdLong());
+        }
 
         MessageAnalysisResult mar = mah.analysisMessageContent(m);
-        smilebot.model.Message entityMessage = null;
+        smilebot.model.Message message = null;
 
         if (mar.getResults().size() != 0 || mar.getUserReactions().size() != 0) {
 
             if (editableMessage == null) {
 
-                entityMessage = new smilebot.model.Message(
-                        m.getIdLong(),
-                        new User(user.getSnowflake(), user.getName()),
-                        new Channel(channel.getSnowflake(), channel.getName()),
-                        null
-                );
+                if (!isPublicThreadPost) {
+                    message = new smilebot.model.Message(
+                            m.getIdLong(),
+                            new User(user.getSnowflake(), user.getName()),
+                            new Channel(channel.getSnowflake(), channel.getName()),
+                            null
+                    );
+                } else {
+                    message = new smilebot.model.Message(
+                            m.getIdLong(),
+                            new User(user.getSnowflake(), user.getName()),
+                            new Channel(channel.getSnowflake(), channel.getName()),
+                            new DiscordThread(thread.getSnowflake(), thread.getName(), thread.isArchived())
+                    );
+                }
 
             } else {
-                entityMessage = editableMessage;
+                message = editableMessage;
             }
+
+            Emoji entityEmoji = null;
+            Channel entityChannel = null;
+            DiscordThread entityThread = null;
+            User entityUser = null;
 
             for (EmojiCount ec : mar.getResults()) {
 
@@ -495,29 +540,77 @@ public class DiscordService {
 
                 if (emoji != null) {
 
-                    Emoji entityEmoji = new Emoji(emoji.getSnowflake(), emoji.getEmoji());
-                    Channel entityChannel = new Channel(channel.getSnowflake(), channel.getName());
-                    User entityUser = new User(user.getSnowflake(), user.getName());
+                    if (server instanceof CachedServer) {
+                        entityEmoji = new Emoji(emoji.getSnowflake(), emoji.getEmoji());
+                        entityChannel = new Channel(channel.getSnowflake(), channel.getName());
+                        if (isPublicThreadPost) {
+                            entityThread = new DiscordThread(thread.getSnowflake(), thread.getName(), thread.isArchived());
+                        }
+                        entityUser = new User(user.getSnowflake(), user.getName());
+                    } else {
+                        entityEmoji = (Emoji)server.findEmojiBySnowflake(emoji.getSnowflake());
+                        entityChannel = (Channel)server.findChannelBySnowflake(channel.getSnowflake());
+                        if (isPublicThreadPost) {
+                            entityThread = (DiscordThread)server.findThreadBySnowflake(thread.getSnowflake());
+                        }
+                        entityUser = (User)server.findUserBySnowflake(user.getSnowflake());
+                    }
+
 
                     EmojiInMessageResult eimr = new EmojiInMessageResult(
-                            entityMessage,
+                            message,
                             entityEmoji,
                             ec.getCount()
                     );
 
                     entityEmoji.addEmojiInMessageResult(eimr);
-                    entityMessage.addEmojiInMessageResult(eimr);
+                    message.addEmojiInMessageResult(eimr);
 
-                    if (!entityChannel.isContainMessage(entityMessage))
-                        entityChannel.addMessage(entityMessage);
+                    if (!entityChannel.isContainMessage(message))
+                        entityChannel.addMessage(message);
 
-                    if (!entityUser.isContainMessage(entityMessage))
-                        entityUser.addMessage(entityMessage);
+                    if (!entityUser.isContainMessage(message))
+                        entityUser.addMessage(message);
+
+                    if (isPublicThreadPost) {
+                        if(!entityThread.isContainMessage(message))
+                            entityThread.addMessage(message);
+                    }
 
                 }
             }
 
-            return entityMessage;
+            for (UserReaction ur : mar.getUserReactions()) {
+
+                User reactUser = (User)server.findUserBySnowflake(ur.getUserSnowflake());
+                Emoji reactEmoji = (Emoji)server.findEmojiBySnowflake(ur.getEmojiSnowflake());
+
+                Reaction reaction = new Reaction(message, reactUser, reactEmoji);
+
+                reactUser.addReaction(reaction);
+                reactEmoji.addReaction(reaction);
+                message.addReaction(reaction);
+
+                //
+                //  Messages to which users reacted must also be associated with the channel,
+                //  and also with the user who left the reaction
+                //
+                if (channel != null) {
+                    if (!channel.isContainMessage(message))
+                        channel.addMessage(message);
+                }
+
+                if (thread != null) {
+                    if (!thread.isContainMessage(message))
+                        thread.addMessage(message);
+                }
+
+                if (!reactUser.isContainMessage(message))
+                    reactUser.addMessage(message);
+
+            }
+
+            return message;
 
         }
 
@@ -525,91 +618,4 @@ public class DiscordService {
 
     }
 
-    private static void analyzeContentOnInit(Message m, Server server, MessageAnalysisHelper mah) {
-
-        MessageAnalysisResult mar = mah.analysisMessageContent(m);
-
-        if (mar.getResults().size() != 0 || mar.getUserReactions().size() != 0) {
-
-            //
-            // If the user and channel is in the server list,
-            // then we will process the message and add it to the statistics
-            // If not, then (for now) ignore
-            //
-
-            User entityUser = server.findUserBySnowflake(m.getAuthor().getIdLong());
-            Channel entityChannel = server.findChannelBySnowflake(m.getChannel().getIdLong());
-            DiscordThread entityThread = server.findThreadBySnowflake(m.getChannel().getIdLong());
-
-            if (entityUser != null && (entityChannel != null || entityThread != null)) {
-
-                smilebot.model.Message message = new smilebot.model.Message(
-                        m.getIdLong(),
-                        entityUser,
-                        entityChannel,
-                        entityThread
-                );
-
-                for (EmojiCount ec : mar.getResults()) {
-
-                    Emoji entityEmoji = server.findEmojiBySnowflake(ec.getSnowflake());
-
-                    if (entityEmoji != null) {
-
-                        EmojiInMessageResult eimr = new EmojiInMessageResult(message, entityEmoji, ec.getCount());
-
-                        entityEmoji.addEmojiInMessageResult(eimr);
-                        message.addEmojiInMessageResult(eimr);
-
-                        if (entityChannel != null) {
-                            if (!entityChannel.isContainMessage(message))
-                                entityChannel.addMessage(message);
-                        }
-
-                        if (entityThread != null) {
-                            if (!entityThread.isContainMessage(message))
-                                entityThread.addMessage(message);
-                        }
-
-                        if (!entityUser.isContainMessage(message))
-                            entityUser.addMessage(message);
-
-                    }
-                }
-
-                for (UserReaction ur : mar.getUserReactions()) {
-
-                    User reactUser = server.findUserBySnowflake(ur.getUserSnowflake());
-                    Emoji reactEmoji = server.findEmojiBySnowflake(ur.getEmojiSnowflake());
-
-                    Reaction reaction = new Reaction(message,reactUser, reactEmoji);
-
-                    reactUser.addReaction(reaction);
-                    reactEmoji.addReaction(reaction);
-                    message.addReaction(reaction);
-
-                    //
-                    //  Messages to which users reacted must also be associated with the channel,
-                    //  and also with the user who left the reaction
-                    //
-                    if (entityChannel != null) {
-                        if (!entityChannel.isContainMessage(message))
-                            entityChannel.addMessage(message);
-                    }
-
-                    if (entityThread != null) {
-                        if (!entityThread.isContainMessage(message))
-                            entityThread.addMessage(message);
-                    }
-
-                    if (!reactUser.isContainMessage(message))
-                        reactUser.addMessage(message);
-
-                }
-
-            }
-
-        }
-
-    }
 }

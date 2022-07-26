@@ -1,5 +1,6 @@
 package smilebot.events;
 
+import com.sun.xml.bind.v2.model.core.ID;
 import net.dv8tion.jda.api.events.channel.ChannelCreateEvent;
 import net.dv8tion.jda.api.events.channel.ChannelDeleteEvent;
 import net.dv8tion.jda.api.events.channel.update.ChannelUpdateNameEvent;
@@ -60,7 +61,7 @@ public class DiscordEventFactory {
                 e.getChannel().getIdLong(),
                 e.getMessageIdLong(),
                 e.getUserIdLong(),
-                e.getReactionEmote().getIdLong()
+                e.getReaction().getEmoji().asCustom().getIdLong()
         );
     }
 
@@ -70,7 +71,7 @@ public class DiscordEventFactory {
                 e.getChannel().getIdLong(),
                 e.getMessageIdLong(),
                 e.getUserIdLong(),
-                e.getReactionEmote().getIdLong()
+                e.getReaction().getEmoji().asCustom().getIdLong()
         );
     }
 
@@ -81,6 +82,14 @@ public class DiscordEventFactory {
                 e.getMessageIdLong(),
                 0,
                 0
+        );
+    }
+
+    public static IDiscordEvent processThreadCreatedEvent(MessageReceivedEvent e) {
+        return new ThreadCreatedEvent(
+                e.getMessage().getIdLong(),
+                e.getChannel().getIdLong(),
+                e.getMessage().getContentDisplay()
         );
     }
 

@@ -64,6 +64,7 @@ public class Channel extends AbstractDiscordEntity implements IChannel, IMessage
         return messages;
     }
 
+    @Override
     public List<DiscordThread> getThreads() {
         return threads;
     }

@@ -1,5 +1,6 @@
 package smilebot.monitored;
 
+import net.dv8tion.jda.api.entities.MessageType;
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
@@ -15,7 +16,13 @@ public class MessageListener extends ListenerAdapter {
     public void onMessageReceived(@NotNull MessageReceivedEvent e) {
 
         System.out.println("Received messageReceiveEvent");
-        IDiscordEvent event = DiscordEventFactory.processMessageReceivedEvent(e);
+
+        IDiscordEvent event = null;
+        if (e.getMessage().getType() == MessageType.THREAD_CREATED) {
+            event = DiscordEventFactory.processThreadCreatedEvent(e);
+        } else if (e.getMessage().getType() == MessageType.DEFAULT) {
+            event = DiscordEventFactory.processMessageReceivedEvent(e);
+        }
         DiscordEventsPool.getInstance().addEvent(event);
 
     }
