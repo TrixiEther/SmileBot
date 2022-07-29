@@ -42,11 +42,10 @@ public class MessageAnalysisHelper {
             }
 
             for (MessageReaction mr : message.getReactions()) {
-                MessageReaction.ReactionEmote re = mr.getReactionEmote();
+                EmojiUnion eu = mr.getEmoji();
                 // Need to check this, because default Discord emoji could throw exception here
-                if (re.isEmote()) {
-                    long emojiSnowflake = mr.getReactionEmote().getEmote().getIdLong();
-
+                if (eu.getType() == Emoji.Type.CUSTOM) {
+                    long emojiSnowflake = mr.getEmoji().asCustom().getIdLong();
                     // Count only reactions with the custom emoji
                     if (emojiSnowflake == e.getSnowflake()) {
                         for (User u : mr.retrieveUsers().complete()) {
