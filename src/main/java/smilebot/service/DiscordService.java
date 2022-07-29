@@ -26,6 +26,7 @@ public class DiscordService {
     private static final ServerDAOImpl serverDAO = new ServerDAOImpl();
     private static final MessageDAOImpl messageDAO = new MessageDAOImpl();
     private static final ChannelDAOImpl channelDAO = new ChannelDAOImpl();
+    private static final ThreadDAOImpl threadDAO = new ThreadDAOImpl();
     private static final UserDAOImpl userDAO = new UserDAOImpl();
     private static final EmojiDAOImpl emojiDAO = new EmojiDAOImpl();
 
@@ -220,9 +221,11 @@ public class DiscordService {
 
         serverDAO.closeSession();
 
+        cachedData.setRequiredRefreshServer(server_snowflake);
+
     }
 
-    public static void processChannelDeleted(long snowflake) {
+    public static void processChannelDeleted(long server_snowflake, long snowflake) {
 
         channelDAO.openSession();
 
@@ -232,9 +235,11 @@ public class DiscordService {
         }
 
         channelDAO.closeSession();
+
+        cachedData.setRequiredRefreshServer(server_snowflake);
     }
 
-    public static void processChannelEdited(long snowflake, String newName) {
+    public static void processChannelUpdate(long snowflake, String newName) {
 
         channelDAO.openSession();
 
@@ -373,7 +378,7 @@ public class DiscordService {
 
     }
 
-    public static void processThreadCreated(long snowflake, long channel_snowflake, String name) {
+    public static void processThreadCreated(long server_snowflake, long snowflake, long channel_snowflake, String name) {
 
         channelDAO.openSession();
 
@@ -387,6 +392,38 @@ public class DiscordService {
         }
 
         channelDAO.closeSession();
+
+        cachedData.setRequiredRefreshServer(server_snowflake);
+    }
+
+    public static void processThreadUpdate(long snowflake, String newname) {
+
+        threadDAO.openSession();
+
+        DiscordThread threadEntity = (DiscordThread) threadDAO.findById(snowflake);
+        if (threadEntity != null) {
+            if (!threadEntity.getName().equals(newname)) {
+                threadEntity.setName(newname);
+                threadDAO.update(threadEntity);
+            }
+        }
+
+        threadDAO.closeSession();
+
+    }
+
+    public static void processThreadDeleted(long server_snowflake, long snowflake) {
+
+        threadDAO.openSession();
+
+        DiscordThread threadEntity = (DiscordThread) threadDAO.findById(snowflake);
+        if (threadEntity != null) {
+            threadDAO.delete(threadEntity);
+        }
+
+        threadDAO.closeSession();
+
+        cachedData.setRequiredRefreshServer(server_snowflake);
     }
 
     private static void analysisChannelMessages(GuildMessageChannel ch, Server server) {
@@ -457,9 +494,16 @@ public class DiscordService {
         CachedServer cachedServer = cachedData.getServerBySnowflake(snowflake);
 
         try {
-            if (cachedServer == null) {
-                System.out.println("Server " + snowflake
-                        + " not found in the cache, loading...");
+            boolean refresh = cachedData.isRequiredRefresh(snowflake);
+            if (cachedServer == null || refresh) {
+                if (cachedServer == null) {
+                    System.out.println("Server " + snowflake
+                            + " not found in the cache, loading...");
+                }
+                if (refresh) {
+                    System.out.println("Server " + snowflake
+                            + " needs to be updated, loading...");
+                }
                 serverDAO.openSession();
                 Server server = (Server) serverDAO.findById(snowflake);
                 cachedData.addServer(server.getSnowflake(),

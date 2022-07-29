@@ -1,9 +1,10 @@
 package smilebot.events;
 
-import com.sun.xml.bind.v2.model.core.ID;
+import net.dv8tion.jda.api.entities.ChannelField;
+import net.dv8tion.jda.api.entities.ThreadChannel;
 import net.dv8tion.jda.api.events.channel.ChannelCreateEvent;
 import net.dv8tion.jda.api.events.channel.ChannelDeleteEvent;
-import net.dv8tion.jda.api.events.channel.update.ChannelUpdateNameEvent;
+import net.dv8tion.jda.api.events.channel.update.GenericChannelUpdateEvent;
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
@@ -25,34 +26,39 @@ public class DiscordEventFactory {
 
     }
 
-    public static IDiscordEvent processMessageDeleteEvent(MessageDeleteEvent e) {
-        return new DeleteMessageEvent(e.getMessageIdLong());
+    public static IDiscordEvent processMessageDeletedEvent(MessageDeleteEvent e) {
+        return new MessageDeletedEvent(e.getMessageIdLong());
     }
 
-    public static IDiscordEvent processMessageUpdateEvent(MessageUpdateEvent e) {
-        return new UpdateMessageEvent(e.getMessageIdLong(), e.getMessage());
+    public static IDiscordEvent processMessageUpdatedEvent(MessageUpdateEvent e) {
+        return new MessageUpdatedEvent(e.getMessageIdLong(), e.getMessage());
     }
 
     public static IDiscordEvent processChannelCreatedEvent(ChannelCreateEvent e) {
         return new ChannelCreatedEvent(
-                e.getChannel().getIdLong(),
-                e.getChannel().getName(),
-                e.getGuild().getIdLong()
-        );
-    }
-
-    public static IDiscordEvent processChannelDeleteEvent(ChannelDeleteEvent e) {
-        return new ChannelDeletedEvent(
+                e.getGuild().getIdLong(),
                 e.getChannel().getIdLong(),
                 e.getChannel().getName()
         );
     }
 
-    public static IDiscordEvent processChannelUpdatedEvent(ChannelUpdateNameEvent e) {
-        return new ChannelEditedEvent(
+    public static IDiscordEvent processChannelDeletedEvent(ChannelDeleteEvent e) {
+        return new ChannelDeletedEvent(
+                e.getGuild().getIdLong(),
                 e.getChannel().getIdLong(),
-                e.getNewValue()
+                e.getChannel().getName()
         );
+    }
+
+    public static IDiscordEvent processChannelUpdatedEvent(GenericChannelUpdateEvent ge) {
+        if (ge.getPropertyIdentifier().equals(ChannelField.NAME.getFieldName())) {
+            return new ChannelUpdatedEvent(
+                    ge.getGuild().getIdLong(),
+                    ge.getEntity().getIdLong(),
+                    (String) ge.getNewValue()
+            );
+        }
+        return null;
     }
 
     public static IDiscordEvent processReactionAddedEvent(MessageReactionAddEvent e) {
@@ -85,11 +91,33 @@ public class DiscordEventFactory {
         );
     }
 
-    public static IDiscordEvent processThreadCreatedEvent(MessageReceivedEvent e) {
+    public static IDiscordEvent processThreadCreatedEvent(ChannelCreateEvent e) {
         return new ThreadCreatedEvent(
-                e.getMessage().getIdLong(),
+                e.getGuild().getIdLong(),
                 e.getChannel().getIdLong(),
-                e.getMessage().getContentDisplay()
+                ((ThreadChannel)e.getChannel()).getParentChannel().getIdLong(),
+                e.getChannel().getName()
+        );
+    }
+
+    public static IDiscordEvent processThreadUpdatedEvent(GenericChannelUpdateEvent ge) {
+        if (ge.getPropertyIdentifier().equals(ChannelField.NAME.getFieldName())) {
+            return new ThreadUpdatedEvent(
+                    ge.getGuild().getIdLong(),
+                    ge.getEntity().getIdLong(),
+                    ((ThreadChannel)ge.getChannel()).getParentChannel().getIdLong(),
+                    (String) ge.getNewValue()
+            );
+        }
+        return null;
+    }
+
+    public static IDiscordEvent processThreadDeletedEvent(ChannelDeleteEvent e) {
+        return new ThreadDeletedEvent(
+                e.getGuild().getIdLong(),
+                e.getChannel().getIdLong(),
+                ((ThreadChannel)e.getChannel()).getParentChannel().getIdLong(),
+                e.getChannel().getName()
         );
     }
 

@@ -1,6 +1,5 @@
 package smilebot.monitored;
 
-import net.dv8tion.jda.api.entities.MessageType;
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
@@ -16,13 +15,7 @@ public class MessageListener extends ListenerAdapter {
     public void onMessageReceived(@NotNull MessageReceivedEvent e) {
 
         System.out.println("Received messageReceiveEvent");
-
-        IDiscordEvent event = null;
-        if (e.getMessage().getType() == MessageType.THREAD_CREATED) {
-            event = DiscordEventFactory.processThreadCreatedEvent(e);
-        } else if (e.getMessage().getType() == MessageType.DEFAULT) {
-            event = DiscordEventFactory.processMessageReceivedEvent(e);
-        }
+        IDiscordEvent event = DiscordEventFactory.processMessageReceivedEvent(e);
         DiscordEventsPool.getInstance().addEvent(event);
 
     }
@@ -31,7 +24,7 @@ public class MessageListener extends ListenerAdapter {
     public void onMessageDelete(@NotNull MessageDeleteEvent e) {
 
         System.out.println("Received messageDeleteEvent");
-        IDiscordEvent event = DiscordEventFactory.processMessageDeleteEvent(e);
+        IDiscordEvent event = DiscordEventFactory.processMessageDeletedEvent(e);
         DiscordEventsPool.getInstance().addEvent(event);
 
     }
@@ -40,7 +33,7 @@ public class MessageListener extends ListenerAdapter {
     public void onMessageUpdate(@NotNull MessageUpdateEvent e) {
 
         System.out.println("Received messageUpdateEvent");
-        IDiscordEvent event = DiscordEventFactory.processMessageUpdateEvent(e);
+        IDiscordEvent event = DiscordEventFactory.processMessageUpdatedEvent(e);
         DiscordEventsPool.getInstance().addEvent(event);
 
     }

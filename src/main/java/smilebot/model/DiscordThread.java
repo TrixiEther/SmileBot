@@ -43,6 +43,11 @@ public class DiscordThread extends AbstractDiscordEntity implements IDiscordThre
     }
 
     @Override
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Override
     public String getName() {
         return name;
     }

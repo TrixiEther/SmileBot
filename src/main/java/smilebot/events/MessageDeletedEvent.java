@@ -2,11 +2,11 @@ package smilebot.events;
 
 import smilebot.service.DiscordService;
 
-public class DeleteMessageEvent implements IDiscordEvent {
+public class MessageDeletedEvent implements IDiscordEvent {
 
     private final long snowflake;
 
-    public DeleteMessageEvent(long snowflake) {
+    public MessageDeletedEvent(long snowflake) {
         this.snowflake = snowflake;
     }
 
