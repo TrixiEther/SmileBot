@@ -18,7 +18,9 @@ public class DiscordEventsPool extends Thread {
     }
 
     public void addEvent(IDiscordEvent e) {
-        this.events.add(e);
+        if (e != null) {
+            this.events.add(e);
+        }
     }
 
     public static DiscordEventsPool getInstance() {

@@ -26,7 +26,7 @@ public class CachedServer extends AbstractCachedObject implements IServer {
             this.users.add(new CachedUser(u.getSnowflake(), u.getName()));
         }
         for (IChannel c : channels) {
-            this.channels.add(new CachedChannel(c.getSnowflake(), c.getName()));
+            this.channels.add(new CachedChannel(c.getSnowflake(), c.getName(), c.getThreads()));
         }
     }
 
@@ -106,12 +106,22 @@ public class CachedServer extends AbstractCachedObject implements IServer {
 
     @Override
     public IDiscordThread findThreadBySnowflake(long snowflake) {
+        for (CachedChannel c : channels) {
+            for (CachedThread t : c.getThreads())
+                if (t.snowflake == snowflake)
+                    return t;
+        }
         return null;
     }
 
     @Override
     public IMessageContainer findMessageContainerBySnowflake(long snowflake) {
         return null;
+    }
+
+    @Override
+    public List<? extends IChannel> getChannels() {
+        return channels;
     }
 
     public CachedChannel findChannelByName(String name) {

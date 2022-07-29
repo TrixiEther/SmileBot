@@ -19,6 +19,8 @@ public class DiscordThread extends AbstractDiscordEntity implements IDiscordThre
     @OneToMany(mappedBy = "thread", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Message> messages;
 
+    private DiscordThread() {}
+
     public DiscordThread(long snowflake, String name, boolean is_archived) {
         this.snowflake = snowflake;
         this.name = name;
@@ -38,6 +40,11 @@ public class DiscordThread extends AbstractDiscordEntity implements IDiscordThre
     @Override
     public void addMessage(Message message) {
         this.messages.add(message);
+    }
+
+    @Override
+    public void setName(String name) {
+        this.name = name;
     }
 
     @Override
