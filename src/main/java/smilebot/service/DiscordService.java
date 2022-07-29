@@ -2,6 +2,7 @@ package smilebot.service;
 
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message;
+
 import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji;
 import smilebot.dao.*;
 import smilebot.exceptions.ServerNotFoundException;
@@ -64,6 +65,7 @@ public class DiscordService {
             }
 
         }
+
         for (RichCustomEmoji e : guild.getEmojiCache().asList()) {
             Emoji emoji = new Emoji(Long.parseLong(e.getId()), e.getName());
             emoji.setServer(server);
@@ -110,6 +112,7 @@ public class DiscordService {
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
+
 
         if (cachedServer != null) {
 
@@ -225,8 +228,6 @@ public class DiscordService {
 
     }
 
-    public static void processChannelDeleted(long server_snowflake, long snowflake) {
-
         channelDAO.openSession();
 
         Channel channelEntity = (Channel) channelDAO.findById(snowflake);
@@ -240,6 +241,7 @@ public class DiscordService {
     }
 
     public static void processChannelUpdate(long snowflake, String newName) {
+
 
         channelDAO.openSession();
 
@@ -364,6 +366,7 @@ public class DiscordService {
             messageDAO.closeSession();
         }
 
+
         if (cachedServer != null && entityMessage != null) {
             entityMessage.removeAllReactions();
 
@@ -459,6 +462,7 @@ public class DiscordService {
                     Message lastMessage = ch.retrieveMessageById(lastId).complete();
                     lastMessageProcessed = true;
                     analyzeContent(lastMessage, server, mah, null);
+
                 }
 
                 if (tempMessages.size() > 0) {
@@ -483,7 +487,7 @@ public class DiscordService {
         }
 
     }
-
+    
     private static CachedServer getCachedServer(long snowflake) throws ServerNotFoundException {
 
         if (cachedData.isUninitialized(snowflake)) {
@@ -520,6 +524,7 @@ public class DiscordService {
         } catch (NullPointerException e) {
             cachedData.setUninitializedServer(snowflake);
             throw new ServerNotFoundException();
+
         }
 
         return cachedServer;
@@ -549,6 +554,7 @@ public class DiscordService {
         MessageAnalysisResult mar = mah.analysisMessageContent(m);
         smilebot.model.Message message = null;
 
+
         if (mar.getResults().size() != 0 || mar.getUserReactions().size() != 0) {
 
             if (editableMessage == null) {
@@ -577,7 +583,6 @@ public class DiscordService {
             Channel entityChannel = null;
             DiscordThread entityThread = null;
             User entityUser = null;
-
             for (EmojiCount ec : mar.getResults()) {
 
                 IEmoji emoji = server.findEmojiBySnowflake(ec.getSnowflake());
@@ -623,7 +628,7 @@ public class DiscordService {
 
                 }
             }
-
+            
             for (UserReaction ur : mar.getUserReactions()) {
 
                 User reactUser = (User)server.findUserBySnowflake(ur.getUserSnowflake());
@@ -661,5 +666,4 @@ public class DiscordService {
         return null;
 
     }
-
 }

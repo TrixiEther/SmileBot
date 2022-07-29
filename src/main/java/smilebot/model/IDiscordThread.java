@@ -7,4 +7,5 @@ public interface IDiscordThread extends ISnowflake {
     boolean isArchived();
     boolean isContainMessage(Message message);
     void addMessage(Message message);
+
 }

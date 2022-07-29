@@ -12,7 +12,7 @@ public interface IServer {
     IChannel findChannelBySnowflake(long snowflake);
     IDiscordThread findThreadBySnowflake(long snowflake);
     IMessageContainer findMessageContainerBySnowflake(long snowflake);
-
     List<? extends IChannel> getChannels();
+
 
 }

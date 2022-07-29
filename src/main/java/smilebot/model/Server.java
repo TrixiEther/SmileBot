@@ -88,6 +88,7 @@ public class Server extends AbstractDiscordEntity implements IServer {
     }
 
     public List<? extends IChannel> getChannels() {
+
         return channels;
     }
 
