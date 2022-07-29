@@ -426,6 +426,42 @@ public class DiscordService {
         cachedData.setRequiredRefreshServer(server_snowflake);
     }
 
+    public static void processUserJoin(long server_snowflake, long user_snowflake, String name) {
+
+        serverDAO.openSession();
+
+        Server server = (Server) serverDAO.findById(server_snowflake);
+
+        if (server != null) {
+            User entityUser = new User(user_snowflake, name);
+            server.addUser(entityUser);
+            entityUser.addServer(server);
+            serverDAO.merge(server);
+        }
+
+        serverDAO.closeSession();
+
+        cachedData.setRequiredRefreshServer(server_snowflake);
+    }
+
+    public static void processUserLeft(long server_snowflake, long snowflake) {
+
+        serverDAO.openSession();
+
+        Server server = (Server) serverDAO.findById(server_snowflake);
+        if (server != null) {
+            server.removeUser(
+                    server.findUserBySnowflake(snowflake)
+            );
+            serverDAO.merge(server);
+        }
+
+        serverDAO.closeSession();
+
+        cachedData.setRequiredRefreshServer(server_snowflake);
+
+    }
+
     private static void analysisChannelMessages(GuildMessageChannel ch, Server server) {
 
         if (ch instanceof TextChannel)

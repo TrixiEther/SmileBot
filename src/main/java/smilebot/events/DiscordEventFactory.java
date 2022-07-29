@@ -5,6 +5,9 @@ import net.dv8tion.jda.api.entities.ThreadChannel;
 import net.dv8tion.jda.api.events.channel.ChannelCreateEvent;
 import net.dv8tion.jda.api.events.channel.ChannelDeleteEvent;
 import net.dv8tion.jda.api.events.channel.update.GenericChannelUpdateEvent;
+import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
@@ -118,6 +121,21 @@ public class DiscordEventFactory {
                 e.getChannel().getIdLong(),
                 ((ThreadChannel)e.getChannel()).getParentChannel().getIdLong(),
                 e.getChannel().getName()
+        );
+    }
+
+    public static IDiscordEvent processUserJoinEvent(GuildMemberJoinEvent e) {
+        return new UserJoinEvent(
+                e.getGuild().getIdLong(),
+                e.getUser().getIdLong(),
+                e.getUser().getName()
+        );
+    }
+
+    public static IDiscordEvent processUserLeftEvent(GuildMemberRemoveEvent e) {
+        return new UserLeftEvent(
+                e.getGuild().getIdLong(),
+                e.getUser().getIdLong()
         );
     }
 
