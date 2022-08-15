@@ -1,6 +1,6 @@
 package smilebot.dao;
 
-public interface AbstractDAO<T> {
+public interface IDataAccessLayer<T> {
 
     T findById(long id);
 

@@ -17,7 +17,6 @@ import smilebot.model.Emoji;
 import smilebot.model.User;
 import smilebot.monitored.IInternalEventListener;
 import smilebot.monitored.IInternalEventProducer;
-import smilebot.monitored.InternalListener;
 import smilebot.utils.CachedData;
 import smilebot.utils.CachedServer;
 
@@ -27,12 +26,12 @@ public class DiscordService implements IInternalEventProducer {
 
     private static final DiscordService service = new DiscordService();
 
-    private final ServerDAOImpl serverDAO = new ServerDAOImpl();
-    private final MessageDAOImpl messageDAO = new MessageDAOImpl();
-    private final ChannelDAOImpl channelDAO = new ChannelDAOImpl();
-    private final ThreadDAOImpl threadDAO = new ThreadDAOImpl();
-    private final UserDAOImpl userDAO = new UserDAOImpl();
-    private final EmojiDAOImpl emojiDAO = new EmojiDAOImpl();
+    private final DiscordDataAccessLayerImpl<Server> serverDAO = new DiscordDataAccessLayerImpl<>();
+    private final DiscordDataAccessLayerImpl<smilebot.model.Message> messageDAO = new DiscordDataAccessLayerImpl<>();
+    private final DiscordDataAccessLayerImpl<Channel> channelDAO = new DiscordDataAccessLayerImpl<>();
+    private final DiscordDataAccessLayerImpl<DiscordThread> threadDAO = new DiscordDataAccessLayerImpl<>();
+    private final DiscordDataAccessLayerImpl<User> userDAO = new DiscordDataAccessLayerImpl<>();
+    private final DiscordDataAccessLayerImpl<Emoji> emojiDAO = new DiscordDataAccessLayerImpl<>();
 
     private final CachedData cachedData = new CachedData();
 

@@ -5,16 +5,16 @@ import org.hibernate.Transaction;
 import org.springframework.core.GenericTypeResolver;
 import smilebot.utils.HibernateSessionFactoryUtil;
 
-public abstract class AbstractDAOImpl<T> implements AbstractDAO<T> {
+public abstract class DataAccessLayerImpl<T> implements IDataAccessLayer<T> {
 
     protected final Class<T> genericType;
 
     private Session session;
 
     @SuppressWarnings("unchecked")
-    public AbstractDAOImpl() {
+    public DataAccessLayerImpl() {
         this.genericType = (Class<T>) GenericTypeResolver
-                .resolveTypeArgument(getClass(), AbstractDAOImpl.class);
+                .resolveTypeArgument(getClass(), DataAccessLayerImpl.class);
     }
 
     public void openSession() {
