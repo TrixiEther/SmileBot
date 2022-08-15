@@ -8,7 +8,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
-public abstract class AbstractDiscordDAOImpl<T> extends AbstractDAOImpl implements AbstractDiscordDAO {
+public class DiscordDataAccessLayerImpl<T> extends DataAccessLayerImpl<T> implements AbstractDiscordDAO<T> {
 
     @SuppressWarnings("unchecked")
     public T findBySnowflake(String s_name, long snowflake) {
