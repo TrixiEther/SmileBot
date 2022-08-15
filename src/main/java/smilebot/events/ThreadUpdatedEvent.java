@@ -10,7 +10,7 @@ public class ThreadUpdatedEvent extends ThreadEvent {
 
     @Override
     public void process() {
-        DiscordService.processThreadUpdate(snowflake, name);
+        DiscordService.getInstance().processThreadUpdate(snowflake, name);
     }
 
 }

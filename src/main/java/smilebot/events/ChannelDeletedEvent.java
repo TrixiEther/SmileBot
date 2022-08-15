@@ -10,6 +10,6 @@ public class ChannelDeletedEvent extends ChannelEvent {
 
     @Override
     public void process() {
-        DiscordService.processChannelDeleted(server_snowflake, snowflake);
+        DiscordService.getInstance().processChannelDeleted(server_snowflake, snowflake);
     }
 }

@@ -10,6 +10,6 @@ public class ThreadDeletedEvent extends ThreadEvent {
 
     @Override
     public void process() {
-        DiscordService.processThreadDeleted(server_snowflake, snowflake);
+        DiscordService.getInstance().processThreadDeleted(server_snowflake, snowflake);
     }
 }

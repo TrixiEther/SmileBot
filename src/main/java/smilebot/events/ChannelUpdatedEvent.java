@@ -10,6 +10,6 @@ public class ChannelUpdatedEvent extends ChannelEvent {
 
     @Override
     public void process() {
-        DiscordService.processChannelUpdate(snowflake, name);
+        DiscordService.getInstance().processChannelUpdate(snowflake, name);
     }
 }

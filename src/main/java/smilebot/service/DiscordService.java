@@ -4,41 +4,52 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji;
 import smilebot.dao.*;
+import smilebot.events.PartialInitializationEvent;
 import smilebot.exceptions.ServerNotFoundException;
 import smilebot.helpers.EmojiCount;
 import smilebot.helpers.MessageAnalysisHelper;
 import smilebot.helpers.MessageAnalysisResult;
 import smilebot.helpers.UserReaction;
+import smilebot.helpers.init.*;
 import smilebot.model.*;
 import smilebot.model.Channel;
 import smilebot.model.Emoji;
 import smilebot.model.User;
+import smilebot.monitored.IInternalEventListener;
+import smilebot.monitored.IInternalEventProducer;
+import smilebot.monitored.InternalListener;
 import smilebot.utils.CachedData;
 import smilebot.utils.CachedServer;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-public class DiscordService {
+public class DiscordService implements IInternalEventProducer {
 
-    private static final ServerDAOImpl serverDAO = new ServerDAOImpl();
-    private static final MessageDAOImpl messageDAO = new MessageDAOImpl();
-    private static final ChannelDAOImpl channelDAO = new ChannelDAOImpl();
-    private static final ThreadDAOImpl threadDAO = new ThreadDAOImpl();
-    private static final UserDAOImpl userDAO = new UserDAOImpl();
-    private static final EmojiDAOImpl emojiDAO = new EmojiDAOImpl();
+    private static final DiscordService service = new DiscordService();
 
-    private static final CachedData cachedData = new CachedData();
+    private final ServerDAOImpl serverDAO = new ServerDAOImpl();
+    private final MessageDAOImpl messageDAO = new MessageDAOImpl();
+    private final ChannelDAOImpl channelDAO = new ChannelDAOImpl();
+    private final ThreadDAOImpl threadDAO = new ThreadDAOImpl();
+    private final UserDAOImpl userDAO = new UserDAOImpl();
+    private final EmojiDAOImpl emojiDAO = new EmojiDAOImpl();
 
-    public static boolean isServerExists(String snowflake) {
+    private final CachedData cachedData = new CachedData();
+
+    private final Set<InitializationHelper> initHelpers = new HashSet<>();
+    private final Set<IInternalEventListener> internalListeners = new HashSet<>();
+
+    public static DiscordService getInstance() {
+        return service;
+    }
+
+    public boolean isServerExists(String snowflake) {
         Server s = serverDAO
                 .findBySnowflake("snowflake", Long.parseLong(snowflake));
         return s != null;
     }
 
-    public static void addServer(Guild guild) {
+    public void addServer(Guild guild) {
 
         Server server = new Server(Long.parseLong(guild.getId()), guild.getName());
 
@@ -81,27 +92,100 @@ public class DiscordService {
         serverDAO.save(server);
         serverDAO.closeSession();
 
-        System.out.println("Starting message analysis...");
-        for (TextChannel tc : guild.getTextChannels()) {
-            analysisChannelMessages(tc, server);
-
-            Set<ThreadChannel> threadChannelList = new HashSet<>();
-            threadChannelList.addAll(tc.getThreadChannels());
-            threadChannelList.addAll(tc.retrieveArchivedPublicThreadChannels().complete());
-            for (ThreadChannel tch : threadChannelList) {
-                analysisChannelMessages(tch, server);
-            }
-        }
-
-        System.out.println("Ready to save messages");
-        serverDAO.openSession();
-        serverDAO.merge(server);
-        serverDAO.closeSession();
-        System.out.println("Server saved!");
+        initHelpers.add(new InitializationHelper(server));
+        for(IInternalEventListener listener : internalListeners)
+            listener.onEvent(new PartialInitializationEvent(guild));
 
     }
 
-    public static void processNewMessage(Message message) {
+    public void processPartialInitialization(Guild guild) {
+
+        System.out.println("Processing Partial Initialization event...");
+
+        serverDAO.openSession();
+        Server server;
+        long snowflake = guild.getIdLong();
+
+        InitializationHelper ih = initHelpers.stream()
+                .filter(i -> i.getSnowflake() == snowflake)
+                .findAny()
+                .orElse(null);
+
+        boolean newEventRequired = false;
+
+        if (ih != null) {
+
+            server = (Server) serverDAO.findById(snowflake);
+            MessageContainer mc = ih.getContainersList()
+                    .stream().filter(c -> c.getStatus() != ContainerStatus.READY)
+                    .findFirst()
+                    .orElse(null);
+
+            if (mc != null) {
+                // The channel must be analyzed from the very beginning or continue from any message
+                if (mc.getStatus() == ContainerStatus.WAITING || mc.getStatus() == ContainerStatus.PROCESSING) {
+                    newEventRequired = true;
+                    analysisChannelMessages(
+                            guild.getTextChannelById(mc.getSnowflake()),
+                            server,
+                            mc
+                    );
+                } else if (mc.getStatus() == ContainerStatus.NESTED_PROCESSING) {
+                    // We take a thread that has not yet been analyzed
+                    MessageContainer tmc = mc.getMessageContainers()
+                            .stream().filter(t -> t.getStatus() != ContainerStatus.READY)
+                            .findFirst()
+                            .orElse(null);
+
+                    if (tmc != null) {
+                        try {
+                            Set<ThreadChannel> threadChannelList = new HashSet<>();
+                            threadChannelList.addAll(Objects.requireNonNull(guild.getTextChannelById(tmc.getParentSnowflake())).getThreadChannels());
+                            threadChannelList.addAll(Objects.requireNonNull(guild.getTextChannelById(tmc.getParentSnowflake())).retrieveArchivedPublicThreadChannels().complete());
+
+                            newEventRequired = true;
+                            analysisChannelMessages(
+                                    threadChannelList.stream().filter(t -> t.getIdLong() == tmc.getSnowflake())
+                                            .findAny()
+                                            .orElse(null),
+                                    server,
+                                    tmc
+                            );
+                        } catch (NullPointerException e) {
+                            System.out.println("Null pointer exception!");
+                        }
+
+                    }
+                    if (mc.getStatus() == ContainerStatus.NESTED_PROCESSING) {
+                        if (mc.getMessageContainers().stream().allMatch(t -> t.getStatus() == ContainerStatus.READY)) {
+                            mc.setStatus(ContainerStatus.READY);
+                        }
+                    }
+
+                } else {
+                    mc.setStatus(ContainerStatus.READY);
+                }
+            }
+
+            serverDAO.merge(server);
+            serverDAO.closeSession();
+
+            if (newEventRequired) {
+                PartialInitializationEvent event = new PartialInitializationEvent(guild);
+                for (IInternalEventListener listener : internalListeners) {
+                    listener.onEvent(event);
+                }
+            } else {
+                System.out.println("Initialization complete!");
+            }
+
+        } else {
+            System.out.println("Initialization Helper not found, nothing to do...");
+        }
+
+    }
+
+    public void processNewMessage(Message message) {
 
         CachedServer cachedServer = null;
 
@@ -131,7 +215,7 @@ public class DiscordService {
 
     }
 
-    public static void processDeleteMessage(long snowflake) {
+    public void processDeleteMessage(long snowflake) {
 
         messageDAO.openSession();
         smilebot.model.Message entityMessage = (smilebot.model.Message) messageDAO.findById(snowflake);
@@ -142,7 +226,7 @@ public class DiscordService {
 
     }
 
-    public static void processUpdateMessage(long snowflake, Message message) {
+    public void processUpdateMessage(long snowflake, Message message) {
 
         System.out.println("Message has been updated, processing...");
 
@@ -206,7 +290,7 @@ public class DiscordService {
 
     }
 
-    public static void processChannelCreated(long server_snowflake, String channelName, long channelSnowflake) {
+    public void processChannelCreated(long server_snowflake, String channelName, long channelSnowflake) {
 
         serverDAO.openSession();
 
@@ -225,7 +309,7 @@ public class DiscordService {
 
     }
 
-    public static void processChannelDeleted(long server_snowflake, long snowflake) {
+    public void processChannelDeleted(long server_snowflake, long snowflake) {
 
         channelDAO.openSession();
 
@@ -239,7 +323,7 @@ public class DiscordService {
         cachedData.setRequiredRefreshServer(server_snowflake);
     }
 
-    public static void processChannelUpdate(long snowflake, String newName) {
+    public void processChannelUpdate(long snowflake, String newName) {
 
         channelDAO.openSession();
 
@@ -254,7 +338,7 @@ public class DiscordService {
         channelDAO.closeSession();
     }
 
-    public static void processMessageReactionAdded(long server_sn, long channel_sn, long message_sn, long user_sn, long emoji_sn) {
+    public void processMessageReactionAdded(long server_sn, long channel_sn, long message_sn, long user_sn, long emoji_sn) {
 
         messageDAO.openSession();
 
@@ -323,7 +407,7 @@ public class DiscordService {
 
     }
 
-    public static void processMessageReactionRemoved(long server_sn, long message_sn, long user_sn, long emoji_sn) {
+    public void processMessageReactionRemoved(long server_sn, long message_sn, long user_sn, long emoji_sn) {
 
         messageDAO.openSession();
 
@@ -350,7 +434,7 @@ public class DiscordService {
         messageDAO.closeSession();
     }
 
-    public static void processMessageReactionRemovedAll(long server_sn, long message_sn) {
+    public void processMessageReactionRemovedAll(long server_sn, long message_sn) {
 
         messageDAO.openSession();
 
@@ -378,7 +462,7 @@ public class DiscordService {
 
     }
 
-    public static void processThreadCreated(long server_snowflake, long snowflake, long channel_snowflake, String name) {
+    public void processThreadCreated(long server_snowflake, long snowflake, long channel_snowflake, String name) {
 
         channelDAO.openSession();
 
@@ -396,7 +480,7 @@ public class DiscordService {
         cachedData.setRequiredRefreshServer(server_snowflake);
     }
 
-    public static void processThreadUpdate(long snowflake, String newname) {
+    public void processThreadUpdate(long snowflake, String newname) {
 
         threadDAO.openSession();
 
@@ -412,7 +496,7 @@ public class DiscordService {
 
     }
 
-    public static void processThreadDeleted(long server_snowflake, long snowflake) {
+    public void processThreadDeleted(long server_snowflake, long snowflake) {
 
         threadDAO.openSession();
 
@@ -426,7 +510,7 @@ public class DiscordService {
         cachedData.setRequiredRefreshServer(server_snowflake);
     }
 
-    public static void processUserJoin(long server_snowflake, long user_snowflake, String name) {
+    public void processUserJoin(long server_snowflake, long user_snowflake, String name) {
 
         serverDAO.openSession();
 
@@ -444,7 +528,7 @@ public class DiscordService {
         cachedData.setRequiredRefreshServer(server_snowflake);
     }
 
-    public static void processUserLeft(long server_snowflake, long snowflake) {
+    public void processUserLeft(long server_snowflake, long snowflake) {
 
         serverDAO.openSession();
 
@@ -462,7 +546,7 @@ public class DiscordService {
 
     }
 
-    private static void analysisChannelMessages(GuildMessageChannel ch, Server server) {
+    private void analysisChannelMessages(GuildMessageChannel ch, Server server, IContainMessages container) {
 
         if (ch instanceof TextChannel)
             System.out.println("Channel = " + ch.getName());
@@ -473,54 +557,54 @@ public class DiscordService {
 
         MessageAnalysisHelper mah = new MessageAnalysisHelper(server.getEmojis());
 
-        try {
-            int count = 0;
-            List<Message> tempMessages = new ArrayList<>();
-            String lastId = null;
-            boolean lastMessageProcessed = false;
+        int count = 0;
+        List<Message> tempMessages = new ArrayList<>();
+        long lastId = 0;
 
-            try {
-                lastId = ch.getLatestMessageId();
-            } catch (IllegalStateException e) {
-                System.out.println("Perhaps when the channel is empty, there is nothing to do...");
-                return;
-            }
-
-            for (int i = 0;;i++) {
-
-                System.out.println("Starting analyze i = " + i);
-                tempMessages.addAll(ch.getHistoryBefore(lastId, 100).complete().getRetrievedHistory());
-
-                if (!lastMessageProcessed) {
-                    Message lastMessage = ch.retrieveMessageById(lastId).complete();
-                    lastMessageProcessed = true;
-                    analyzeContent(lastMessage, server, mah, null);
-                }
-
-                if (tempMessages.size() > 0) {
-                    for (Message m : tempMessages) {
-                        analyzeContent(m, server, mah, null);
-                        count++;
-                    }
-
-                    lastId = tempMessages.get(tempMessages.size() - 1).getId();
-
-                    tempMessages.clear();
-
-                } else {
-                    tempMessages.clear();
-                    break;
-                }
-
-            }
-            System.out.println("Complete! count = " + count);
-        } catch (Exception e) {
-            System.out.println("Error in analysisChannelMessages: " + e.getMessage());
+        if (container.getLastProcessedMessageId() != 0) {
+            lastId = container.getLastProcessedMessageId();
+        } else {
+            lastId = ch.getLatestMessageIdLong();
         }
+
+        tempMessages.addAll(ch.getHistoryBefore(lastId, 100).complete().getRetrievedHistory());
+
+        boolean willBeLastIteration = false;
+        System.out.println("Temp messages size=" + tempMessages.size());
+        if (tempMessages.size() < 100) {
+            willBeLastIteration = true;
+        }
+
+        container.setStatus(ContainerStatus.PROCESSING);
+
+        if (container.getLastProcessedMessageId() == 0) {
+            Message lastMessage = ch.retrieveMessageById(lastId).complete();
+            analyzeContent(lastMessage, server, mah, null);
+        }
+
+        if (tempMessages.size() > 0) {
+            for (Message m : tempMessages) {
+                analyzeContent(m, server, mah, null);
+                count++;
+            }
+
+            container.setLastProcessedMessageId(tempMessages.get(tempMessages.size() - 1).getIdLong());
+            tempMessages.clear();
+        }
+
+        if (willBeLastIteration) {
+            if (container.getType() == ContainerType.THREAD) {
+                container.setStatus(ContainerStatus.READY);
+            } else {
+                container.setStatus(ContainerStatus.NESTED_PROCESSING);
+            }
+        }
+
+        System.out.println("Complete! count = " + count);
 
     }
 
-    private static CachedServer getCachedServer(long snowflake) throws ServerNotFoundException {
+    private CachedServer getCachedServer(long snowflake) throws ServerNotFoundException {
 
         if (cachedData.isUninitialized(snowflake)) {
             System.out.println("Server uninitialized");
@@ -561,7 +645,7 @@ public class DiscordService {
         return cachedServer;
     }
 
-    private static smilebot.model.Message analyzeContent(Message m, IServer server, MessageAnalysisHelper mah, smilebot.model.Message editableMessage) {
+    private smilebot.model.Message analyzeContent(Message m, IServer server, MessageAnalysisHelper mah, smilebot.model.Message editableMessage) {
 
         boolean isPublicThreadPost = (m.getChannel().getType() == ChannelType.GUILD_PUBLIC_THREAD);
 
@@ -698,4 +782,8 @@ public class DiscordService {
 
     }
 
+    @Override
+    public void subscribeToInternalEvents(IInternalEventListener listener) {
+        this.internalListeners.add(listener);
+    }
 }

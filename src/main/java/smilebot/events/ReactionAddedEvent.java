@@ -10,6 +10,7 @@ public class ReactionAddedEvent extends ReactionEvent {
 
     @Override
     public void process() {
-        DiscordService.processMessageReactionAdded(server_snowflake, channel_snowflake, message_snowflake, user_snowflake, emoji_snowflake);
+        DiscordService.getInstance()
+            .processMessageReactionAdded(server_snowflake, channel_snowflake, message_snowflake, user_snowflake, emoji_snowflake);
     }
 }

@@ -16,10 +16,10 @@ public class InitializationEvent implements IDiscordEvent {
 
         System.out.println("Received initialization command");
 
-        if (!DiscordService.isServerExists(guild.getId())) {
+        if (!DiscordService.getInstance().isServerExists(guild.getId())) {
 
             System.out.println("Server does not exist in the database");
-            DiscordService.addServer(guild);
+            DiscordService.getInstance().addServer(guild);
 
         } else {
             System.out.println("Server already exist");

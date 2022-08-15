@@ -10,7 +10,7 @@ public class ReactionRemovedAllEvent extends ReactionEvent {
 
     @Override
     public void process() {
-        DiscordService.processMessageReactionRemovedAll(server_snowflake, message_snowflake);
+        DiscordService.getInstance().processMessageReactionRemovedAll(server_snowflake, message_snowflake);
     }
 
 }
