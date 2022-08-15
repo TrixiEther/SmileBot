@@ -13,6 +13,6 @@ public class UserJoinEvent extends MemberEvent {
 
     @Override
     public void process() {
-        DiscordService.processUserJoin(server_snowflake, user_snowflake, name);
+        DiscordService.getInstance().processUserJoin(server_snowflake, user_snowflake, name);
     }
 }

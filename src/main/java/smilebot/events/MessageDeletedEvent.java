@@ -12,6 +12,6 @@ public class MessageDeletedEvent implements IDiscordEvent {
 
     @Override
     public void process() {
-        DiscordService.processDeleteMessage(snowflake);
+        DiscordService.getInstance().processDeleteMessage(snowflake);
     }
 }

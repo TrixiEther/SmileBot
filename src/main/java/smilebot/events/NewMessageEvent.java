@@ -12,7 +12,7 @@ public class NewMessageEvent extends MessageEvent {
     @Override
     public void process() {
         System.out.println("Posted: " + message.getContentDisplay());
-        DiscordService.processNewMessage(message);
+        DiscordService.getInstance().processNewMessage(message);
     }
 
 }

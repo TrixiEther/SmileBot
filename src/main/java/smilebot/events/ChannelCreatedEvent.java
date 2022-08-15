@@ -6,7 +6,7 @@ public class ChannelCreatedEvent extends ChannelEvent {
 
     @Override
     public void process() {
-        DiscordService.processChannelCreated(server_snowflake, name, snowflake);
+        DiscordService.getInstance().processChannelCreated(server_snowflake, name, snowflake);
     }
 
     public ChannelCreatedEvent(long server_snowflake, long snowflake, String name) {

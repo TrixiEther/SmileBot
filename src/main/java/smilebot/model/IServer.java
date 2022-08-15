@@ -2,7 +2,7 @@ package smilebot.model;
 
 import java.util.List;
 
-public interface IServer {
+public interface IServer extends ISnowflake {
 
     String getName();
     void setName(String name);

@@ -15,6 +15,6 @@ public class MessageUpdatedEvent implements IDiscordEvent {
 
     @Override
     public void process() {
-        DiscordService.processUpdateMessage(snowflake, message);
+        DiscordService.getInstance().processUpdateMessage(snowflake, message);
     }
 }

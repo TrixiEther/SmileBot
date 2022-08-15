@@ -10,7 +10,7 @@ public class UserLeftEvent extends MemberEvent {
 
     @Override
     public void process() {
-        DiscordService.processUserLeft(server_snowflake, user_snowflake);
+        DiscordService.getInstance().processUserLeft(server_snowflake, user_snowflake);
     }
 
 }

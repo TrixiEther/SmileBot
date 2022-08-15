@@ -8,10 +8,8 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import smilebot.configuration.BotConfigurationProperties;
-import smilebot.monitored.ChannelListener;
-import smilebot.monitored.GuildListener;
-import smilebot.monitored.MessageListener;
-import smilebot.monitored.ReactionListener;
+import smilebot.monitored.*;
+import smilebot.service.DiscordService;
 import smilebot.utils.DiscordEventsPool;
 
 import javax.security.auth.login.LoginException;
@@ -48,6 +46,10 @@ public class SmileBotManager {
 
         System.out.println("Start pool");
         DiscordEventsPool.getInstance().start();
+
+        DiscordService.getInstance().subscribeToInternalEvents(
+                new InternalListener()
+        );
 
     }
 
