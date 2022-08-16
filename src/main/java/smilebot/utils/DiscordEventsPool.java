@@ -10,21 +10,39 @@ public class DiscordEventsPool extends Thread {
     private static final DiscordEventsPool POOL = new DiscordEventsPool();
 
     private final Queue<IDiscordEvent> events;
+    private final Queue<IDiscordEvent> delayedEvents;
 
     public boolean isRunning = true;
+    public boolean isLocked = false;
 
     public DiscordEventsPool() {
         this.events = new LinkedList<>();
+        this.delayedEvents = new LinkedList<>();
     }
 
     public void addEvent(IDiscordEvent e) {
         if (e != null) {
-            this.events.add(e);
+            if (!isLocked || e.isBlockingBypass())
+                this.events.add(e);
+            else
+                this.delayedEvents.add(e);
         }
     }
 
     public static DiscordEventsPool getInstance() {
         return POOL;
+    }
+
+    public void lock() {
+        this.isLocked = true;
+        if (!events.isEmpty()) {
+            delayedEvents.addAll(events);
+        }
+    }
+
+    public void unlock() {
+        this.isLocked = false;
+        events.addAll(delayedEvents);
     }
 
     @Override

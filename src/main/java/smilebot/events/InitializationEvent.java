@@ -2,6 +2,7 @@ package smilebot.events;
 
 import net.dv8tion.jda.api.entities.Guild;
 import smilebot.service.DiscordService;
+import smilebot.utils.DiscordEventsPool;
 
 public class InitializationEvent implements IDiscordEvent {
 
@@ -19,6 +20,9 @@ public class InitializationEvent implements IDiscordEvent {
         if (!DiscordService.getInstance().isServerExists(guild.getId())) {
 
             System.out.println("Server does not exist in the database");
+
+            DiscordEventsPool.getInstance().lock();
+
             DiscordService.getInstance().addServer(guild);
 
         } else {
@@ -26,4 +30,10 @@ public class InitializationEvent implements IDiscordEvent {
         }
 
     }
+
+    @Override
+    public boolean isBlockingBypass() {
+        return true;
+    }
+
 }

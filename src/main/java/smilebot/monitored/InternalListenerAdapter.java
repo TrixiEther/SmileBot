@@ -3,6 +3,7 @@ package smilebot.monitored;
 
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import smilebot.events.IDiscordEvent;
+import smilebot.events.PartialInitializationCompleteEvent;
 import smilebot.events.PartialInitializationEvent;
 
 import javax.annotation.Nonnull;
@@ -15,6 +16,7 @@ import java.util.concurrent.ConcurrentMap;
 public abstract class InternalListenerAdapter implements IInternalEventListener {
 
     public void onPartialInitialization(@Nonnull PartialInitializationEvent event) {}
+    public void onPartialInitializationComplete(@Nonnull PartialInitializationCompleteEvent event) {}
 
     private static final MethodHandles.Lookup lookup = MethodHandles.lookup();
     private static final ConcurrentMap<Class<?>, MethodHandle> methods = new ConcurrentHashMap<>();
