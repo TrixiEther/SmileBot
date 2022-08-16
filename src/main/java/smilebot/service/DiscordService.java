@@ -123,8 +123,8 @@ public class DiscordService implements IInternalEventProducer {
 
             if (mc != null) {
                 // The channel must be analyzed from the very beginning or continue from any message
+                newEventRequired = true;
                 if (mc.getStatus() == ContainerStatus.WAITING || mc.getStatus() == ContainerStatus.PROCESSING) {
-                    newEventRequired = true;
                     analysisChannelMessages(
                             guild.getTextChannelById(mc.getSnowflake()),
                             server,
@@ -143,7 +143,6 @@ public class DiscordService implements IInternalEventProducer {
                             threadChannelList.addAll(Objects.requireNonNull(guild.getTextChannelById(tmc.getParentSnowflake())).getThreadChannels());
                             threadChannelList.addAll(Objects.requireNonNull(guild.getTextChannelById(tmc.getParentSnowflake())).retrieveArchivedPublicThreadChannels().complete());
 
-                            newEventRequired = true;
                             analysisChannelMessages(
                                     threadChannelList.stream().filter(t -> t.getIdLong() == tmc.getSnowflake())
                                             .findAny()
