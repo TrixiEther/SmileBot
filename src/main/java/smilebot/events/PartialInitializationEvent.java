@@ -15,4 +15,9 @@ public class PartialInitializationEvent implements IDiscordEvent {
     public void process() {
         DiscordService.getInstance().processPartialInitialization(guild);
     }
+
+    @Override
+    public boolean isBlockingBypass() {
+        return true;
+    }
 }

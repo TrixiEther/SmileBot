@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji;
 import smilebot.dao.*;
+import smilebot.events.PartialInitializationCompleteEvent;
 import smilebot.events.PartialInitializationEvent;
 import smilebot.exceptions.ServerNotFoundException;
 import smilebot.helpers.EmojiCount;
@@ -175,6 +176,10 @@ public class DiscordService implements IInternalEventProducer {
                     listener.onEvent(event);
                 }
             } else {
+                PartialInitializationCompleteEvent event = new PartialInitializationCompleteEvent();
+                for (IInternalEventListener listener : internalListeners) {
+                    listener.onEvent(event);
+                }
                 System.out.println("Initialization complete!");
             }
 
