@@ -10,6 +10,10 @@ import javax.persistence.criteria.Root;
 
 public class DiscordDataAccessLayerImpl<T> extends DataAccessLayerImpl<T> implements AbstractDiscordDAO<T> {
 
+    public DiscordDataAccessLayerImpl(Class<T> clazz) {
+        super(clazz);
+    }
+
     @SuppressWarnings("unchecked")
     public T findBySnowflake(String s_name, long snowflake) {
 

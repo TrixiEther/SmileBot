@@ -58,6 +58,11 @@ public class DiscordThread extends AbstractDiscordEntity implements IDiscordThre
     }
 
     @Override
+    public void setArchived(boolean archived) {
+        this.is_archived = archived;
+    }
+
+    @Override
     public String toString() {
         return "model.Thread{" +
                 "snowflake = " + snowflake +
