@@ -31,6 +31,11 @@ public class CachedThread extends AbstractCachedObject implements IDiscordThread
     }
 
     @Override
+    public void setArchived(boolean archived) {
+        this.isArchived = archived;
+    }
+
+    @Override
     public boolean isContainMessage(Message message) {
         return false;
     }

@@ -3,6 +3,7 @@ package smilebot.dao;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.springframework.core.GenericTypeResolver;
+import smilebot.model.AbstractDiscordEntity;
 import smilebot.utils.HibernateSessionFactoryUtil;
 
 public abstract class DataAccessLayerImpl<T> implements IDataAccessLayer<T> {
@@ -12,9 +13,8 @@ public abstract class DataAccessLayerImpl<T> implements IDataAccessLayer<T> {
     private Session session;
 
     @SuppressWarnings("unchecked")
-    public DataAccessLayerImpl() {
-        this.genericType = (Class<T>) GenericTypeResolver
-                .resolveTypeArgument(getClass(), DataAccessLayerImpl.class);
+    public DataAccessLayerImpl(Class<T> clazz) {
+        this.genericType = clazz;
     }
 
     public void openSession() {

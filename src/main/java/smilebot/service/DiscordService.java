@@ -26,12 +26,12 @@ public class DiscordService implements IInternalEventProducer {
 
     private static final DiscordService service = new DiscordService();
 
-    private final DiscordDataAccessLayerImpl<Server> serverDAO = new DiscordDataAccessLayerImpl<>();
-    private final DiscordDataAccessLayerImpl<smilebot.model.Message> messageDAO = new DiscordDataAccessLayerImpl<>();
-    private final DiscordDataAccessLayerImpl<Channel> channelDAO = new DiscordDataAccessLayerImpl<>();
-    private final DiscordDataAccessLayerImpl<DiscordThread> threadDAO = new DiscordDataAccessLayerImpl<>();
-    private final DiscordDataAccessLayerImpl<User> userDAO = new DiscordDataAccessLayerImpl<>();
-    private final DiscordDataAccessLayerImpl<Emoji> emojiDAO = new DiscordDataAccessLayerImpl<>();
+    private final DiscordDataAccessLayerImpl<Server> serverDAO = new DiscordDataAccessLayerImpl<>(Server.class);
+    private final DiscordDataAccessLayerImpl<smilebot.model.Message> messageDAO = new DiscordDataAccessLayerImpl<>(smilebot.model.Message.class);
+    private final DiscordDataAccessLayerImpl<Channel> channelDAO = new DiscordDataAccessLayerImpl<>(Channel.class);
+    private final DiscordDataAccessLayerImpl<DiscordThread> threadDAO = new DiscordDataAccessLayerImpl<>(DiscordThread.class);
+    private final DiscordDataAccessLayerImpl<User> userDAO = new DiscordDataAccessLayerImpl<>(User.class);
+    private final DiscordDataAccessLayerImpl<Emoji> emojiDAO = new DiscordDataAccessLayerImpl<>(Emoji.class);
 
     private final CachedData cachedData = new CachedData();
 
@@ -479,16 +479,15 @@ public class DiscordService implements IInternalEventProducer {
         cachedData.setRequiredRefreshServer(server_snowflake);
     }
 
-    public void processThreadUpdate(long snowflake, String newname) {
+    public void processThreadUpdate(long snowflake, String newname, boolean archived) {
 
         threadDAO.openSession();
 
-        DiscordThread threadEntity = (DiscordThread) threadDAO.findById(snowflake);
+        DiscordThread threadEntity = threadDAO.findById(snowflake);
         if (threadEntity != null) {
-            if (!threadEntity.getName().equals(newname)) {
-                threadEntity.setName(newname);
-                threadDAO.update(threadEntity);
-            }
+            threadEntity.setName(newname);
+            threadEntity.setArchived(archived);
+            threadDAO.update(threadEntity);
         }
 
         threadDAO.closeSession();

@@ -104,14 +104,33 @@ public class DiscordEventFactory {
     }
 
     public static IDiscordEvent processThreadUpdatedEvent(GenericChannelUpdateEvent ge) {
-        if (ge.getPropertyIdentifier().equals(ChannelField.NAME.getFieldName())) {
-            return new ThreadUpdatedEvent(
-                    ge.getGuild().getIdLong(),
-                    ge.getEntity().getIdLong(),
-                    ((ThreadChannel)ge.getChannel()).getParentChannel().getIdLong(),
-                    (String) ge.getNewValue()
-            );
+        try {
+
+
+            if (ge.getPropertyIdentifier().equals(ChannelField.NAME.getFieldName())) {
+                return new ThreadUpdatedEvent(
+                        ge.getGuild().getIdLong(),
+                        ge.getEntity().getIdLong(),
+                        ((ThreadChannel) ge.getChannel()).getParentChannel().getIdLong(),
+                        (String) ge.getNewValue(),
+                        ((ThreadChannel) ge.getChannel()).isArchived()
+                );
+            }
+
+            if (ge.getPropertyIdentifier().equals(ChannelField.ARCHIVED.getFieldName())) {
+                return new ThreadUpdatedEvent(
+                        ge.getGuild().getIdLong(),
+                        ge.getEntity().getIdLong(),
+                        ((ThreadChannel) ge.getChannel()).getParentChannel().getIdLong(),
+                        ge.getEntity().getName(),
+                        (Boolean) ge.getNewValue()
+                );
+            }
+        } catch (NullPointerException e) {
+            System.out.println("NPE");
+            return null;
         }
+
         return null;
     }
 
