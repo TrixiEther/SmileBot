@@ -671,7 +671,6 @@ public class DiscordService implements IInternalEventProducer {
     private smilebot.model.Message analyzeContent(Message m, IServer server, MessageAnalysisHelper mah, smilebot.model.Message editableMessage) {
 
         if (m.getAuthor().isBot()) {
-            System.out.println("User is bot");
             return null;
         }
 
