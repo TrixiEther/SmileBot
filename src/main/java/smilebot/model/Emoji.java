@@ -50,7 +50,7 @@ public class Emoji extends AbstractDiscordEntity implements IEmoji {
 
     @Override
     public String getEmojiText() {
-        return ":" + emoji + ":";
+        return "<:" + emoji + ":" + snowflake + ">";
     }
 
     @Override

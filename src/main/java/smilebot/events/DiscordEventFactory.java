@@ -19,13 +19,20 @@ public class DiscordEventFactory {
 
     public static IDiscordEvent processMessageReceivedEvent(MessageReceivedEvent e) {
 
-        if (e.getMessage().getContentDisplay().equals("!init")) {
-            System.out.println("Create InitializationEvent");
-            return new InitializationEvent(e.getGuild());
-        } else {
-            System.out.println("NewMessageEvent");
-            return new NewMessageEvent(e.getMessage());
+        if (!e.getAuthor().isBot()) {
+            if (e.getMessage().getContentDisplay().equals("!init")) {
+                System.out.println("Create InitializationEvent");
+                return new InitializationEvent(e.getGuild());
+            } else if (e.getMessage().getContentDisplay().equals("!stat")) {
+                System.out.println("Create get GeneralStatisticEvent");
+                return new GeneralStatisticEvent(e.getGuild().getIdLong(), e.getMessage());
+            } else {
+                System.out.println("NewMessageEvent");
+                return new NewMessageEvent(e.getMessage());
+            }
         }
+
+        return null;
 
     }
 

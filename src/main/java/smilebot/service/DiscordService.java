@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji;
 import smilebot.dao.*;
 import smilebot.events.PartialInitializationCompleteEvent;
 import smilebot.events.PartialInitializationEvent;
+import smilebot.events.ReplyGeneralStatisticEvent;
 import smilebot.exceptions.ServerNotFoundException;
 import smilebot.helpers.EmojiCount;
 import smilebot.helpers.MessageAnalysisHelper;
@@ -33,6 +34,7 @@ public class DiscordService implements IInternalEventProducer {
     private final DiscordDataAccessLayerImpl<DiscordThread> threadDAO = new DiscordDataAccessLayerImpl<>(DiscordThread.class);
     private final DiscordDataAccessLayerImpl<User> userDAO = new DiscordDataAccessLayerImpl<>(User.class);
     private final DiscordDataAccessLayerImpl<Emoji> emojiDAO = new DiscordDataAccessLayerImpl<>(Emoji.class);
+    private final DiscordDataAccessLayerImpl<GeneralSummary> gSummaryDAO = new DiscordDataAccessLayerImpl<>(GeneralSummary.class);
 
     private final CachedData cachedData = new CachedData();
 
@@ -123,8 +125,8 @@ public class DiscordService implements IInternalEventProducer {
 
             if (mc != null) {
                 // The channel must be analyzed from the very beginning or continue from any message
+                newEventRequired = true;
                 if (mc.getStatus() == ContainerStatus.WAITING || mc.getStatus() == ContainerStatus.PROCESSING) {
-                    newEventRequired = true;
                     analysisChannelMessages(
                             guild.getTextChannelById(mc.getSnowflake()),
                             server,
@@ -143,7 +145,6 @@ public class DiscordService implements IInternalEventProducer {
                             threadChannelList.addAll(Objects.requireNonNull(guild.getTextChannelById(tmc.getParentSnowflake())).getThreadChannels());
                             threadChannelList.addAll(Objects.requireNonNull(guild.getTextChannelById(tmc.getParentSnowflake())).retrieveArchivedPublicThreadChannels().complete());
 
-                            newEventRequired = true;
                             analysisChannelMessages(
                                     threadChannelList.stream().filter(t -> t.getIdLong() == tmc.getSnowflake())
                                             .findAny()
@@ -549,6 +550,25 @@ public class DiscordService implements IInternalEventProducer {
 
     }
 
+    public void processGetGeneralStatistic(long server, Message message) {
+
+        gSummaryDAO.openSession();
+
+        List<GeneralSummary> summaries = gSummaryDAO.findMultipleBySnowflake("server", server);
+
+        gSummaryDAO.closeSession();
+
+        if (summaries != null) {
+            ReplyGeneralStatisticEvent event = new ReplyGeneralStatisticEvent(message, summaries);
+            for (IInternalEventListener listener : internalListeners) {
+                listener.onEvent(event);
+            }
+        }
+
+
+
+    }
+
     private void analysisChannelMessages(GuildMessageChannel ch, Server server, IContainMessages container) {
 
         if (ch instanceof TextChannel)
@@ -649,6 +669,10 @@ public class DiscordService implements IInternalEventProducer {
     }
 
     private smilebot.model.Message analyzeContent(Message m, IServer server, MessageAnalysisHelper mah, smilebot.model.Message editableMessage) {
+
+        if (m.getAuthor().isBot()) {
+            return null;
+        }
 
         boolean isPublicThreadPost = (m.getChannel().getType() == ChannelType.GUILD_PUBLIC_THREAD);
 
