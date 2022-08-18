@@ -23,11 +23,14 @@ public class HibernateSessionFactoryUtil {
                 configuration.addAnnotatedClass(Message.class);
                 configuration.addAnnotatedClass(EmojiInMessageResult.class);
                 configuration.addAnnotatedClass(Reaction.class);
+                configuration.addAnnotatedClass(GeneralSummaryPK.class);
+                configuration.addAnnotatedClass(GeneralSummary.class);
                 StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder()
                         .applySettings(configuration.getProperties());
                 sessionFactory = configuration.buildSessionFactory(builder.build());
             } catch (Exception e) {
                 System.out.println("Exception : " + e.getMessage());
+                e.printStackTrace();
             }
         }
         return sessionFactory;
