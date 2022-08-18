@@ -30,7 +30,7 @@ public class InternalListener extends InternalListenerAdapter {
 
             StringBuilder contentPart = new StringBuilder();
 
-            contentPart.append(gs.getEmoji().getEmojiText()).append(" - ");
+            contentPart.append(gs.getEmoji().getEmojiPrintableText()).append(" - ");
             contentPart.append("in message(").append(gs.getInMessage()).append("), ");
             contentPart.append("in reaction(").append(gs.getInReaction()).append("), ");
             contentPart.append("summary(").append(gs.getSummary()).append(")\n");
