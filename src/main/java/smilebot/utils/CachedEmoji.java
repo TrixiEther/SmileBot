@@ -18,6 +18,9 @@ public class CachedEmoji extends AbstractCachedObject implements IEmoji {
     }
 
     @Override
+    public String getEmojiPrintableText() { return "<:" + emoji + ":" + snowflake + ">"; }
+
+    @Override
     public String getEmojiText() {
         return ":" + emoji + ":";
     }
