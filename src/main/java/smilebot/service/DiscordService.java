@@ -4,9 +4,7 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji;
 import smilebot.dao.*;
-import smilebot.events.PartialInitializationCompleteEvent;
-import smilebot.events.PartialInitializationEvent;
-import smilebot.events.ReplyGeneralStatisticEvent;
+import smilebot.events.*;
 import smilebot.exceptions.ServerNotFoundException;
 import smilebot.helpers.EmojiCount;
 import smilebot.helpers.MessageAnalysisHelper;
@@ -22,6 +20,7 @@ import smilebot.monitored.IInternalEventProducer;
 import smilebot.utils.CachedData;
 import smilebot.utils.CachedServer;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 public class DiscordService implements IInternalEventProducer {
@@ -35,6 +34,8 @@ public class DiscordService implements IInternalEventProducer {
     private final DiscordDataAccessLayerImpl<User> userDAO = new DiscordDataAccessLayerImpl<>(User.class);
     private final DiscordDataAccessLayerImpl<Emoji> emojiDAO = new DiscordDataAccessLayerImpl<>(Emoji.class);
     private final DiscordDataAccessLayerImpl<GeneralSummary> gSummaryDAO = new DiscordDataAccessLayerImpl<>(GeneralSummary.class);
+
+    private final GeneralDiscordAccessLayerImpl generalDAO = new GeneralDiscordAccessLayerImpl();
 
     private final CachedData cachedData = new CachedData();
 
@@ -190,6 +191,60 @@ public class DiscordService implements IInternalEventProducer {
 
     }
 
+    public void processGeneralCreateEvent(GeneralEntityCreateEvent e) throws IllegalAccessException, InstantiationException, InvocationTargetException {
+
+        generalDAO.openSession();
+        Object preservedEntity = generalDAO.findByVal(e.getPreserverClass(), e.getIdColumnName(),e.getPreservedId());
+
+        if (preservedEntity != null) {
+            Object newEntity = e.constructEntity();
+            e.invokeParentSetter(newEntity, preservedEntity);
+            e.invokeChildAdder(preservedEntity, newEntity);
+            generalDAO.save(preservedEntity);
+        }
+
+        generalDAO.closeSession();
+
+        if (e.isRefreshRequired()) {
+            cachedData.setRequiredRefreshServer((long)e.getPreservedId());
+        }
+
+    }
+
+    public void processGeneralUpdateEvent(GeneralEntityUpdateEvent e) throws InvocationTargetException, IllegalAccessException {
+
+        generalDAO.openSession();
+        Object entity = generalDAO.findByVal(e.getEntityClass(), e.getIdColumnName(),e.getIdValue());
+
+        if (entity != null) {
+            e.invokeSetterMethods(entity);
+        }
+
+        generalDAO.merge(entity);
+        generalDAO.closeSession();
+
+        if (e.isRefreshRequired()) {
+            cachedData.setRequiredRefreshServer((long)e.getPreservedId());
+        }
+
+    }
+
+    public void processGeneralDeleteEvent(GeneralEntityDeleteEvent e) {
+
+        generalDAO.openSession();
+        Object entity = generalDAO.findByVal(e.getEntityClass(), e.getIdColumnName(),e.getIdValue());
+
+        if (entity != null) {
+            generalDAO.delete(entity);
+        }
+
+        generalDAO.closeSession();
+
+        if (e.isRefreshRequired()) {
+            cachedData.setRequiredRefreshServer((long)e.getPreservedId());
+        }
+    }
+
     public void processNewMessage(Message message) {
 
         CachedServer cachedServer = null;
@@ -217,17 +272,6 @@ public class DiscordService implements IInternalEventProducer {
         } else {
             System.out.println("Error, server not found after loading, nothing to do...");
         }
-
-    }
-
-    public void processDeleteMessage(long snowflake) {
-
-        messageDAO.openSession();
-        smilebot.model.Message entityMessage = (smilebot.model.Message) messageDAO.findById(snowflake);
-        if (entityMessage != null) {
-            messageDAO.delete(entityMessage);
-        }
-        messageDAO.closeSession();
 
     }
 
@@ -293,54 +337,6 @@ public class DiscordService implements IInternalEventProducer {
 
         messageDAO.closeSession();
 
-    }
-
-    public void processChannelCreated(long server_snowflake, String channelName, long channelSnowflake) {
-
-        serverDAO.openSession();
-
-        Server server = (Server) serverDAO.findById(server_snowflake);
-
-        if (server != null) {
-            Channel entityChannel = new Channel(channelSnowflake, channelName);
-            server.addChannel(entityChannel);
-            entityChannel.setServer(server);
-            serverDAO.merge(server);
-        }
-
-        serverDAO.closeSession();
-
-        cachedData.setRequiredRefreshServer(server_snowflake);
-
-    }
-
-    public void processChannelDeleted(long server_snowflake, long snowflake) {
-
-        channelDAO.openSession();
-
-        Channel channelEntity = (Channel) channelDAO.findById(snowflake);
-        if (channelEntity != null) {
-            channelDAO.delete(channelEntity);
-        }
-
-        channelDAO.closeSession();
-
-        cachedData.setRequiredRefreshServer(server_snowflake);
-    }
-
-    public void processChannelUpdate(long snowflake, String newName) {
-
-        channelDAO.openSession();
-
-        Channel channelEntity = (Channel) channelDAO.findById(snowflake);
-        if (channelEntity != null) {
-            if (!channelEntity.getName().equals(newName)) {
-                channelEntity.setName(newName);
-                channelDAO.update(channelEntity);
-            }
-        }
-
-        channelDAO.closeSession();
     }
 
     public void processMessageReactionAdded(long server_sn, long channel_sn, long message_sn, long user_sn, long emoji_sn) {
@@ -465,53 +461,6 @@ public class DiscordService implements IInternalEventProducer {
 
         messageDAO.closeSession();
 
-    }
-
-    public void processThreadCreated(long server_snowflake, long snowflake, long channel_snowflake, String name) {
-
-        channelDAO.openSession();
-
-        Channel channel = (Channel) channelDAO.findById(channel_snowflake);
-
-        if (channel != null) {
-            DiscordThread entityThread = new DiscordThread(snowflake, name, false);
-            channel.addThread(entityThread);
-            entityThread.setChannel(channel);
-            channelDAO.merge(channel);
-        }
-
-        channelDAO.closeSession();
-
-        cachedData.setRequiredRefreshServer(server_snowflake);
-    }
-
-    public void processThreadUpdate(long snowflake, String newname, boolean archived) {
-
-        threadDAO.openSession();
-
-        DiscordThread threadEntity = threadDAO.findById(snowflake);
-        if (threadEntity != null) {
-            threadEntity.setName(newname);
-            threadEntity.setArchived(archived);
-            threadDAO.update(threadEntity);
-        }
-
-        threadDAO.closeSession();
-
-    }
-
-    public void processThreadDeleted(long server_snowflake, long snowflake) {
-
-        threadDAO.openSession();
-
-        DiscordThread threadEntity = (DiscordThread) threadDAO.findById(snowflake);
-        if (threadEntity != null) {
-            threadDAO.delete(threadEntity);
-        }
-
-        threadDAO.closeSession();
-
-        cachedData.setRequiredRefreshServer(server_snowflake);
     }
 
     public void processUserJoin(long server_snowflake, long user_snowflake, String name) {

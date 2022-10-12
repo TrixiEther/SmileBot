@@ -1,5 +1,10 @@
 package smilebot.model;
 
+import smilebot.model.annotations.DiscordEntityClass;
+import smilebot.model.annotations.DiscordEntityConstructor;
+import smilebot.model.annotations.DiscordEntityField;
+import smilebot.model.annotations.DiscordEntityMethod;
+
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,6 +12,7 @@ import java.util.List;
 @Entity
 @Table(name = "threads")
 @AttributeOverride(name = "snowflake", column = @Column(name = "t_snowflake"))
+@DiscordEntityClass(containedIn = true)
 public class DiscordThread extends AbstractDiscordEntity implements IDiscordThread, IMessageContainer {
 
     private String name;
@@ -14,6 +20,7 @@ public class DiscordThread extends AbstractDiscordEntity implements IDiscordThre
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "channel_sn")
+    @DiscordEntityField(isParentContainer = true)
     private Channel channel;
 
     @OneToMany(mappedBy = "thread", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -21,6 +28,8 @@ public class DiscordThread extends AbstractDiscordEntity implements IDiscordThre
 
     private DiscordThread() {}
 
+    @DiscordEntityConstructor(arguments
+            = {CustomFields.ID, CustomFields.THREAD_NAME, CustomFields.THREAD_ARCHIVED})
     public DiscordThread(long snowflake, String name, boolean is_archived) {
         this.snowflake = snowflake;
         this.name = name;
@@ -28,6 +37,7 @@ public class DiscordThread extends AbstractDiscordEntity implements IDiscordThre
         messages = new ArrayList<>();
     }
 
+    @DiscordEntityMethod(parentContainerSetter = true)
     public void setChannel(Channel channel) {
         this.channel = channel;
     }
@@ -43,6 +53,7 @@ public class DiscordThread extends AbstractDiscordEntity implements IDiscordThre
     }
 
     @Override
+    @DiscordEntityMethod(setterFor = CustomFields.THREAD_NAME)
     public void setName(String name) {
         this.name = name;
     }
@@ -58,6 +69,7 @@ public class DiscordThread extends AbstractDiscordEntity implements IDiscordThre
     }
 
     @Override
+    @DiscordEntityMethod(setterFor = CustomFields.THREAD_ARCHIVED)
     public void setArchived(boolean archived) {
         this.is_archived = archived;
     }

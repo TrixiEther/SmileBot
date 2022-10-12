@@ -1,6 +1,10 @@
 package smilebot.model;
 
 import org.hibernate.annotations.Cascade;
+import smilebot.model.annotations.DiscordEntityClass;
+import smilebot.model.annotations.DiscordEntityConstructor;
+import smilebot.model.annotations.DiscordEntityField;
+import smilebot.model.annotations.DiscordEntityMethod;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -9,10 +13,12 @@ import java.util.List;
 @Entity
 @Table(name = "emoji")
 @AttributeOverride(name = "snowflake", column = @Column(name = "e_snowflake"))
+@DiscordEntityClass(containedIn = true)
 public class Emoji extends AbstractDiscordEntity implements IEmoji {
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "server_sn")
+    @DiscordEntityField(isParentContainer = true)
     private Server server;
 
     @Column(name = "content")
@@ -36,6 +42,7 @@ public class Emoji extends AbstractDiscordEntity implements IEmoji {
 
     public Emoji() {};
 
+    @DiscordEntityConstructor(arguments = {CustomFields.ID, CustomFields.EMOJI_NAME})
     public Emoji(long snowflake, String emoji) {
         super(snowflake);
         this.emoji = emoji;
@@ -59,6 +66,7 @@ public class Emoji extends AbstractDiscordEntity implements IEmoji {
     }
 
     @Override
+    @DiscordEntityMethod(setterFor = CustomFields.EMOJI_NAME)
     public void setEmoji(String emoji) {
         this.emoji = emoji;
     }
@@ -67,6 +75,7 @@ public class Emoji extends AbstractDiscordEntity implements IEmoji {
         return server;
     }
 
+    @DiscordEntityMethod(parentContainerSetter = true)
     public void setServer(Server server) {
         this.server = server;
     }

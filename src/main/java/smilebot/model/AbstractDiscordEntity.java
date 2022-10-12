@@ -1,5 +1,8 @@
 package smilebot.model;
 
+import smilebot.model.annotations.DiscordEntityField;
+import smilebot.model.annotations.DiscordEntityMethod;
+
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 
@@ -7,6 +10,7 @@ import javax.persistence.MappedSuperclass;
 public abstract class AbstractDiscordEntity implements ISnowflake {
 
     @Id
+    @DiscordEntityField(isId = true, fieldName = CustomFields.ID)
     protected long snowflake;
 
     public AbstractDiscordEntity() {};
@@ -21,6 +25,7 @@ public abstract class AbstractDiscordEntity implements ISnowflake {
     }
 
     @Override
+    @DiscordEntityMethod(setterFor = CustomFields.ID)
     public void setSnowflake(long snowflake) {
         this.snowflake = snowflake;
     }

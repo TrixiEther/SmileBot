@@ -1,7 +1,9 @@
 package smilebot.model;
 
-import org.hibernate.annotations.Cascade;
-import org.springframework.lang.NonNull;
+import smilebot.model.annotations.DiscordEntityClass;
+import smilebot.model.annotations.DiscordEntityConstructor;
+import smilebot.model.annotations.DiscordEntityField;
+import smilebot.model.annotations.DiscordEntityMethod;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -10,12 +12,14 @@ import java.util.List;
 @Entity
 @Table (name = "channels")
 @AttributeOverride(name = "snowflake", column = @Column(name = "c_snowflake"))
+@DiscordEntityClass(containedIn = true)
 public class Channel extends AbstractDiscordEntity implements IChannel, IMessageContainer {
 
     private String name;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "server_sn")
+    @DiscordEntityField(isParentContainer = true)
     private Server server;
 
     @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -26,6 +30,7 @@ public class Channel extends AbstractDiscordEntity implements IChannel, IMessage
 
     public Channel() {}
 
+    @DiscordEntityConstructor(arguments = {CustomFields.ID, CustomFields.CHANNEL_NAME})
     public Channel(long snowflake, String name) {
         this.snowflake = snowflake;
         this.name = name;
@@ -39,6 +44,7 @@ public class Channel extends AbstractDiscordEntity implements IChannel, IMessage
     }
 
     @Override
+    @DiscordEntityMethod(setterFor = CustomFields.CHANNEL_NAME)
     public void setName(String name) {
         this.name = name;
     }
@@ -47,6 +53,7 @@ public class Channel extends AbstractDiscordEntity implements IChannel, IMessage
         return server;
     }
 
+    @DiscordEntityMethod(parentContainerSetter = true)
     public void setServer(Server server) {
         this.server = server;
     }
@@ -56,6 +63,7 @@ public class Channel extends AbstractDiscordEntity implements IChannel, IMessage
         this.messages.add(message);
     }
 
+    @DiscordEntityMethod(childContainerAdder = DiscordThread.class)
     public void addThread(DiscordThread thread) {
         this.threads.add(thread);
     }
