@@ -1,13 +1,11 @@
 package smilebot.model;
 
 import org.hibernate.annotations.Cascade;
-import org.hibernate.annotations.LazyCollection;
-import org.hibernate.annotations.LazyCollectionOption;
+import smilebot.model.annotations.DiscordEntityMethod;
 
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 @Entity
 @Table(name = "servers")
@@ -44,10 +42,12 @@ public class Server extends AbstractDiscordEntity implements IServer {
         emojis = new ArrayList<>();
     }
 
+    @DiscordEntityMethod(childContainerAdder = Channel.class)
     public void addChannel(Channel channel) {
         channels.add(channel);
     }
 
+    @DiscordEntityMethod(childContainerAdder = Emoji.class)
     public void addEmoji(Emoji emoji) {
         emojis.add(emoji);
     }

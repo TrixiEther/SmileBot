@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 import smilebot.events.DiscordEventFactory;
 import smilebot.events.IDiscordEvent;
+import smilebot.exceptions.CustomIdAnnotationNotFoundException;
 import smilebot.utils.DiscordEventsPool;
 
 public class MessageListener extends ListenerAdapter {
@@ -24,7 +25,12 @@ public class MessageListener extends ListenerAdapter {
     public void onMessageDelete(@NotNull MessageDeleteEvent e) {
 
         System.out.println("Received messageDeleteEvent");
-        IDiscordEvent event = DiscordEventFactory.processMessageDeletedEvent(e);
+        IDiscordEvent event = null;
+        try {
+            event = DiscordEventFactory.processMessageDeletedEvent(e);
+        } catch (CustomIdAnnotationNotFoundException customIdAnnotationNotFoundException) {
+            customIdAnnotationNotFoundException.printStackTrace();
+        }
         DiscordEventsPool.getInstance().addEvent(event);
 
     }

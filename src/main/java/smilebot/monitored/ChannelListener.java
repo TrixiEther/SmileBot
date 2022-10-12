@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 import smilebot.events.DiscordEventFactory;
 import smilebot.events.IDiscordEvent;
+import smilebot.exceptions.CustomIdAnnotationNotFoundException;
 import smilebot.utils.DiscordEventsPool;
 
 public class ChannelListener extends ListenerAdapter {
@@ -18,12 +19,19 @@ public class ChannelListener extends ListenerAdapter {
 
         System.out.println("Received ChannelCreatedEvent, type="
                 + e.getChannelType().toString());
-
         IDiscordEvent event = null;
         if (e.getChannelType() == ChannelType.TEXT) {
-            event = DiscordEventFactory.processChannelCreatedEvent(e);
+            try {
+                event = DiscordEventFactory.processChannelCreatedEvent(e);
+            } catch (CustomIdAnnotationNotFoundException customIdAnnotationNotFoundException) {
+                customIdAnnotationNotFoundException.printStackTrace();
+            }
         } else if (e.getChannelType() == ChannelType.GUILD_PUBLIC_THREAD) {
-            event = DiscordEventFactory.processThreadCreatedEvent(e);
+            try {
+                event = DiscordEventFactory.processThreadCreatedEvent(e);
+            } catch (CustomIdAnnotationNotFoundException customIdAnnotationNotFoundException) {
+                customIdAnnotationNotFoundException.printStackTrace();
+            }
         }
         DiscordEventsPool.getInstance().addEvent(event);
 
@@ -37,9 +45,17 @@ public class ChannelListener extends ListenerAdapter {
 
         IDiscordEvent event = null;
         if (e.getChannelType() == ChannelType.TEXT) {
-            event = DiscordEventFactory.processChannelDeletedEvent(e);
+            try {
+                event = DiscordEventFactory.processChannelDeletedEvent(e);
+            } catch (CustomIdAnnotationNotFoundException customIdAnnotationNotFoundException) {
+                customIdAnnotationNotFoundException.printStackTrace();
+            }
         } else if (e.getChannelType() == ChannelType.GUILD_PUBLIC_THREAD) {
-            event = DiscordEventFactory.processThreadDeletedEvent(e);
+            try {
+                event = DiscordEventFactory.processThreadDeletedEvent(e);
+            } catch (CustomIdAnnotationNotFoundException customIdAnnotationNotFoundException) {
+                customIdAnnotationNotFoundException.printStackTrace();
+            }
         }
         DiscordEventsPool.getInstance().addEvent(event);
 
@@ -53,7 +69,11 @@ public class ChannelListener extends ListenerAdapter {
 
         IDiscordEvent event = null;
         if (e.getChannelType() == ChannelType.TEXT) {
-            event = DiscordEventFactory.processChannelUpdatedEvent(e);
+            try {
+                event = DiscordEventFactory.processChannelUpdatedEvent(e);
+            } catch (CustomIdAnnotationNotFoundException customIdAnnotationNotFoundException) {
+                customIdAnnotationNotFoundException.printStackTrace();
+            }
         } else {
             event = DiscordEventFactory.processThreadUpdatedEvent(e);
         }

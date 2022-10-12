@@ -2,20 +2,13 @@ package smilebot.dao;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import org.springframework.core.GenericTypeResolver;
-import smilebot.model.AbstractDiscordEntity;
 import smilebot.utils.HibernateSessionFactoryUtil;
 
-public abstract class DataAccessLayerImpl<T> implements IDataAccessLayer<T> {
+public abstract class GeneralDiscordAccessLayer implements IDataAccessLayer {
 
-    protected final Class<T> genericType;
+    protected Session session;
 
-    private Session session;
-
-    @SuppressWarnings("unchecked")
-    public DataAccessLayerImpl(Class<T> clazz) {
-        this.genericType = clazz;
-    }
+    public GeneralDiscordAccessLayer() {}
 
     public void openSession() {
         session = HibernateSessionFactoryUtil.getSessionFactory().openSession();
@@ -26,10 +19,6 @@ public abstract class DataAccessLayerImpl<T> implements IDataAccessLayer<T> {
             if (session.isOpen()) {
                 session.close();
             }
-    }
-
-    public T findById(long id) {
-        return session.get(genericType, id);
     }
 
     @Override
@@ -56,4 +45,5 @@ public abstract class DataAccessLayerImpl<T> implements IDataAccessLayer<T> {
         session.merge(entity);
         trx.commit();
     }
+
 }
