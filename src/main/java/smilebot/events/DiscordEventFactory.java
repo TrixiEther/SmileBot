@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.events.emoji.EmojiRemovedEvent;
 import net.dv8tion.jda.api.events.emoji.update.EmojiUpdateNameEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
@@ -25,6 +26,8 @@ public class DiscordEventFactory {
     public static IDiscordEvent processMessageReceivedEvent(MessageReceivedEvent e) {
 
         if (!e.getAuthor().isBot()) {
+
+            /*
             if (e.getMessage().getContentDisplay().equals("!init")) {
                 System.out.println("Create InitializationEvent");
                 return new InitializationEvent(e.getGuild());
@@ -34,11 +37,26 @@ public class DiscordEventFactory {
             } else {
                 System.out.println("NewMessageEvent");
                 return new NewMessageEvent(e.getMessage());
-            }
+            }*/
+
+            System.out.println("NewMessageEvent");
+            return new NewMessageEvent(e.getMessage());
         }
 
         return null;
 
+    }
+
+    public static IDiscordEvent processInitializationEvent(SlashCommandInteractionEvent e) {
+        return new InitializationEvent(e.getGuild(), e.getUser(), e.getMessageChannel());
+    }
+
+    public static IDiscordEvent processReinitializationEvent(SlashCommandInteractionEvent e) {
+        return new InitializationEvent(e.getGuild(), e.getUser(), e.getMessageChannel());
+    }
+
+    public static IDiscordEvent processGeneralStatisticEvent(SlashCommandInteractionEvent e) {
+        return new GeneralStatisticEvent(e.getGuild().getIdLong(), e.getUser(), e.getMessageChannel());
     }
 
     public static IDiscordEvent processMessageDeletedEvent(MessageDeleteEvent e) throws CustomIdAnnotationNotFoundException {

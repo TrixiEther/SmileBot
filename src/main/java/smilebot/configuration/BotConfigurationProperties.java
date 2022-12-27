@@ -5,6 +5,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
+import java.util.List;
+
 @Configuration
 @ConfigurationProperties(prefix = "discord")
 public class BotConfigurationProperties {
@@ -13,6 +15,7 @@ public class BotConfigurationProperties {
     private Environment env;
 
     private String token;
+    private List<BotCommand> commands;
 
     public void setToken(String t) {
         if (env.getProperty("TOKEN") == null) {
@@ -27,6 +30,14 @@ public class BotConfigurationProperties {
 
     public String getToken() {
         return token;
+    }
+
+    public void setCommands(List<BotCommand> commands) {
+        this.commands = commands;
+    }
+
+    public List<BotCommand> getCommands() {
+        return commands;
     }
 
 }
