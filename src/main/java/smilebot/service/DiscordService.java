@@ -52,11 +52,11 @@ public class DiscordService implements IInternalEventProducer {
         return s != null;
     }
 
-    public void addServer(Guild guild) {
+    public void addServer(InitializationEvent event) {
 
-        Server server = new Server(Long.parseLong(guild.getId()), guild.getName());
+        Server server = new Server(Long.parseLong(event.getGuild().getId()), event.getGuild().getName());
 
-        for (TextChannel tc : guild.getTextChannels()) {
+        for (TextChannel tc : event.getGuild().getTextChannels()) {
             Channel channel = new Channel(Long.parseLong(tc.getId()), tc.getName());
             channel.setServer(server);
             server.addChannel(channel);
@@ -78,13 +78,13 @@ public class DiscordService implements IInternalEventProducer {
             }
 
         }
-        for (RichCustomEmoji e : guild.getEmojiCache().asList()) {
+        for (RichCustomEmoji e : event.getGuild().getEmojiCache().asList()) {
             Emoji emoji = new Emoji(Long.parseLong(e.getId()), e.getName());
             emoji.setServer(server);
             server.addEmoji(emoji);
             System.out.println("e.snowflake=" + Long.parseLong(e.getId()) + "e.name=" + e.getName());
         }
-        for (Member m : guild.getMembers()) {
+        for (Member m : event.getGuild().getMembers()) {
             User user = new User(Long.parseLong(m.getId()), m.getUser().getName());
             user.addServer(server);
             server.addUser(user);
@@ -97,17 +97,17 @@ public class DiscordService implements IInternalEventProducer {
 
         initHelpers.add(new InitializationHelper(server));
         for(IInternalEventListener listener : internalListeners)
-            listener.onEvent(new PartialInitializationEvent(guild));
+            listener.onEvent(new PartialInitializationEvent(event.getGuild(), event.getUserInitiator(), event.getChannel()));
 
     }
 
-    public void processPartialInitialization(Guild guild) {
+    public void processPartialInitialization(PartialInitializationEvent event) {
 
         System.out.println("Processing Partial Initialization event...");
 
         serverDAO.openSession();
         Server server;
-        long snowflake = guild.getIdLong();
+        long snowflake = event.getGuild().getIdLong();
 
         InitializationHelper ih = initHelpers.stream()
                 .filter(i -> i.getSnowflake() == snowflake)
@@ -129,7 +129,7 @@ public class DiscordService implements IInternalEventProducer {
                 newEventRequired = true;
                 if (mc.getStatus() == ContainerStatus.WAITING || mc.getStatus() == ContainerStatus.PROCESSING) {
                     analysisChannelMessages(
-                            guild.getTextChannelById(mc.getSnowflake()),
+                            event.getGuild().getTextChannelById(mc.getSnowflake()),
                             server,
                             mc
                     );
@@ -143,8 +143,8 @@ public class DiscordService implements IInternalEventProducer {
                     if (tmc != null) {
                         try {
                             Set<ThreadChannel> threadChannelList = new HashSet<>();
-                            threadChannelList.addAll(Objects.requireNonNull(guild.getTextChannelById(tmc.getParentSnowflake())).getThreadChannels());
-                            threadChannelList.addAll(Objects.requireNonNull(guild.getTextChannelById(tmc.getParentSnowflake())).retrieveArchivedPublicThreadChannels().complete());
+                            threadChannelList.addAll(Objects.requireNonNull(event.getGuild().getTextChannelById(tmc.getParentSnowflake())).getThreadChannels());
+                            threadChannelList.addAll(Objects.requireNonNull(event.getGuild().getTextChannelById(tmc.getParentSnowflake())).retrieveArchivedPublicThreadChannels().complete());
 
                             analysisChannelMessages(
                                     threadChannelList.stream().filter(t -> t.getIdLong() == tmc.getSnowflake())
@@ -173,14 +173,20 @@ public class DiscordService implements IInternalEventProducer {
             serverDAO.closeSession();
 
             if (newEventRequired) {
-                PartialInitializationEvent event = new PartialInitializationEvent(guild);
+                PartialInitializationEvent piEvent = new PartialInitializationEvent(
+                        event.getGuild(),
+                        event.getUserInitiator(),
+                        event.getChannel());
                 for (IInternalEventListener listener : internalListeners) {
-                    listener.onEvent(event);
+                    listener.onEvent(piEvent);
                 }
             } else {
-                PartialInitializationCompleteEvent event = new PartialInitializationCompleteEvent();
+                PartialInitializationCompleteEvent picEvent = new PartialInitializationCompleteEvent(
+                        event.getUserInitiator(),
+                        event.getChannel()
+                );
                 for (IInternalEventListener listener : internalListeners) {
-                    listener.onEvent(event);
+                    listener.onEvent(picEvent);
                 }
                 System.out.println("Initialization complete!");
             }
@@ -189,6 +195,13 @@ public class DiscordService implements IInternalEventProducer {
             System.out.println("Initialization Helper not found, nothing to do...");
         }
 
+    }
+
+    public void processPartialInitializationComplete(PartialInitializationCompleteEvent event) {
+        PostEvent postEvent = new PostEvent(null, event.getUserInitiator(), event.getChannel());
+        postEvent.addPost("Initialization complete!");
+        for (IInternalEventListener listener : internalListeners)
+            listener.onEvent(postEvent);
     }
 
     public void processGeneralCreateEvent(GeneralEntityCreateEvent e) throws IllegalAccessException, InstantiationException, InvocationTargetException {
@@ -499,23 +512,47 @@ public class DiscordService implements IInternalEventProducer {
 
     }
 
-    public void processGetGeneralStatistic(long server, Message message) {
+    public void processGetGeneralStatistic(long server, MessageChannel channel) {
 
         gSummaryDAO.openSession();
-
         List<GeneralSummary> summaries = gSummaryDAO.findMultipleBySnowflake("server", server);
-
         gSummaryDAO.closeSession();
 
         if (summaries != null) {
-            ReplyGeneralStatisticEvent event = new ReplyGeneralStatisticEvent(message, summaries);
+
+            PostEvent postEvent = new PostEvent(null, null, channel);
+
+            StringBuilder content = new StringBuilder("Results:\n\n");
+            for (GeneralSummary gs : summaries) {
+
+                StringBuilder contentPart = new StringBuilder();
+
+                contentPart.append(gs.getEmoji().getEmojiPrintableText()).append(" - ");
+                contentPart.append("in message(").append(gs.getInMessage()).append("), ");
+                contentPart.append("in reaction(").append(gs.getInReaction()).append("), ");
+                contentPart.append("summary(").append(gs.getSummary()).append(")\n");
+
+                if (content.length() + contentPart.length() > 2000) {
+                    postEvent.addPost(content.toString());
+                    content = new StringBuilder(contentPart);
+                } else {
+                    content.append(contentPart);
+                }
+            }
+
+            postEvent.addPost(content.toString());
+
             for (IInternalEventListener listener : internalListeners) {
-                listener.onEvent(event);
+                listener.onEvent(postEvent);
             }
         }
 
+    }
 
-
+    public void processPost(PostEvent e) {
+        for (IInternalEventListener listener : internalListeners) {
+            listener.onEvent(e);
+        }
     }
 
     private void analysisChannelMessages(GuildMessageChannel ch, Server server, IContainMessages container) {

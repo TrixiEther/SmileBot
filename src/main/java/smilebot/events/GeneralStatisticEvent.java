@@ -1,21 +1,21 @@
 package smilebot.events;
 
-import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.User;
 import smilebot.service.DiscordService;
 
-public class GeneralStatisticEvent implements IDiscordEvent {
+public class GeneralStatisticEvent extends SlashEvent implements IDiscordEvent {
 
     private final long server;
-    private final Message message;
 
-    public GeneralStatisticEvent(long server, Message message) {
+    public GeneralStatisticEvent(long server, User user, MessageChannel channel) {
+        super(user, channel);
         this.server = server;
-        this.message = message;
     }
 
     @Override
     public void process() {
-        DiscordService.getInstance().processGetGeneralStatistic(server,message);
+        DiscordService.getInstance().processGetGeneralStatistic(server, getChannel());
     }
 
 }
