@@ -53,6 +53,9 @@ public class SmileBotManager {
 
         System.out.println("Supported commands:");
 
+        for (BotCommand c : configuration.getCommands())
+            System.out.println(c.getCommand());
+
         List<Command> commands = jda.retrieveCommands().complete();
         for (BotCommand bc : configuration.getCommands()) {
             Command commandToEdit = null;
